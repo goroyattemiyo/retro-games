@@ -38,7 +38,6 @@
     #cs .big{font-family:'DotGothic16',monospace;font-size:22px;color:#00ffff;text-shadow:0 0 12px #00ffff;animation:pulse 1s ease-in-out infinite;letter-spacing:4px;}
     @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
     #cs p{margin-top:12px;color:var(--green-dim);font-size:12px;}
-    #ld{text-align:center;padding:60px;color:var(--green-dim);font-size:13px;letter-spacing:3px;}
   </style>
 </head>
 <body>
@@ -60,7 +59,7 @@
         <button class="sbtn" id="bn">NEXT ▶</button>
       </div>
     </div>
-    <div id="ga"><div id="ld">LOADING</div></div>
+    <div id="ga"><div style="text-align:center;padding:60px;color:var(--green-dim);font-size:13px;letter-spacing:3px;">LOADING</div></div>
     <div id="msg"></div>
     <div id="ctrl">
       <span><kbd>↑↓←→</kbd> 移動</span>
@@ -72,6 +71,8 @@
 </div>
 <script type="py">
 from pyscript import document
+from pyodide.ffi import create_proxy
+
 S=[
   {"name":"STAGE 1","map":["########","#  . # #","# $@.  #","#   $  #","##.#####","#      #","# $  . #","########"]},
   {"name":"STAGE 2","map":["  #####","  #   #","  #$  #","###  $##","#  $ . #","# . #. #","#   @  #","########"]},
@@ -82,17 +83,22 @@ S=[
 W='#';F=' ';B='$';G='.';D='*';P='@';PG='+'
 DI={W:('▓','cell-wall'),F:('·','cell-floor'),B:('□','cell-box'),G:('×','cell-goal'),D:('■','cell-done'),P:('☺','cell-player'),PG:('☺','cell-player-goal')}
 st={'i':0,'g':[],'p':(0,0),'m':0,'c':False}
+
 def ps(i):
   r=[list(x) for x in S[i]['map']];p=(0,0)
   for y,row in enumerate(r):
     for x,c in enumerate(row):
       if c in(P,PG):p=(y,x)
   return r,p
+
 def ls(i):
   st['i']=i;st['g'],st['p']=ps(i);st['m']=0;st['c']=False;rd()
+
 def cb(g):
   pl=sum(row.count(D) for row in g);tot=pl+sum(row.count(B) for row in g);return pl,tot
+
 def ic(g): return not any(B in row for row in g)
+
 def mv(dr,dc):
   if st['c']:return
   r,c=st['p'];nr,nc=r+dr,c+dc;g=st['g']
@@ -110,6 +116,7 @@ def mv(dr,dc):
   st['p']=(nr,nc);st['m']+=1
   if ic(g):st['c']=True
   rd()
+
 def rd():
   g=st['g'];pl,tot=cb(g)
   document.getElementById('sn').textContent=str(st['i']+1)
@@ -125,6 +132,7 @@ def rd():
       s,cl=DI.get(ch,(ch,'cell-floor'));h+=f'<span class="{cl}">{s}</span>'
     h+='\n'
   h+='</pre>';ga.innerHTML=h;mg.textContent=S[st['i']]['name']
+
 def ok(e):
   k=e.key
   if k=='ArrowUp' or k=='w':mv(-1,0)
@@ -137,15 +145,17 @@ def ok(e):
   elif k in('p','P'):
     if st['i']>0:ls(st['i']-1)
   e.preventDefault()
-document.addEventListener('keydown',ok)
+
 def on_r(e):ls(st['i'])
 def on_n(e):
   if st['i']<len(S)-1:ls(st['i']+1)
 def on_p(e):
   if st['i']>0:ls(st['i']-1)
-document.getElementById('br').addEventListener('click',on_r)
-document.getElementById('bn').addEventListener('click',on_n)
-document.getElementById('bp').addEventListener('click',on_p)
+
+document.addEventListener('keydown', create_proxy(ok))
+document.getElementById('br').addEventListener('click', create_proxy(on_r))
+document.getElementById('bn').addEventListener('click', create_proxy(on_n))
+document.getElementById('bp').addEventListener('click', create_proxy(on_p))
 ls(0)
 </script>
 </body>
