@@ -13,7 +13,7 @@
     body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
     body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
 
-    #terminal{width:min(780px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(0,255,65,.2);background:var(--bg);}
+    #terminal{width:min(1100px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(0,255,65,.2);background:var(--bg);}
 
     /* タイトルバー */
     #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
@@ -40,7 +40,7 @@
     }
     #ga{
       font-family:'Share Tech Mono',monospace;
-      font-size:clamp(14px,2.5vw,20px);
+      font-size:clamp(18px,2.8vw,28px);
       line-height:1.4;
       letter-spacing:0.05em;
       white-space:pre;  /* 絶対に折り返さない */
@@ -70,7 +70,7 @@
       padding:8px 10px;
     }
     .panel-label{font-size:10px;color:var(--green-dark);letter-spacing:2px;margin-bottom:4px;}
-    .panel-value{font-size:18px;color:var(--green);text-shadow:0 0 6px rgba(0,255,65,.3);}
+    .panel-value{font-size:22px;color:var(--green);text-shadow:0 0 6px rgba(0,255,65,.3);}
     .panel-value.small{font-size:14px;}
 
     #stage-name{font-size:11px;color:var(--amber);letter-spacing:2px;text-align:center;min-height:16px;}
