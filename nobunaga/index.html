@@ -82,6 +82,7 @@
       <span><kbd>↑↓←→</kbd> 国選択</span>
       <span><kbd>ENTER</kbd> 決定</span>
       <span><kbd>N</kbd> 次の季節</span>
+      <span><kbd>R</kbd> 初期化</span>
     </div>
   </div>
 </div>
@@ -226,10 +227,18 @@ def do_gaiko():
         else:
             st['msg']=f"{k['name']}との交渉は失敗した"
     else:
-        # 同盟
         owner=k['owner']
-        if owner not in st['kuni'][ki].get('allied',[]):
-            st['kuni'][ki].setdefault('allied',[]).append(st['player'])
+        if st['player'] not in k.get('allied',[]):
+            for kk in st['kuni']:
+                if kk['owner']==owner:
+                    kk.setdefault('allied',[])
+                    if st['player'] not in kk['allied']:
+                        kk['allied'].append(st['player'])
+            for kk in st['kuni']:
+                if kk['owner']==st['player']:
+                    kk.setdefault('allied',[])
+                    if owner not in kk['allied']:
+                        kk['allied'].append(owner)
             st['msg']=f"{DAIMYO[owner]['name']}と同盟を締結"
         else:
             st['msg']='既に同盟関係です'
@@ -238,28 +247,42 @@ def do_gaiko():
 def do_attack():
     ki=st['sel']
     if ki is None: st['msg']='攻撃対象の国を選択してください';render();return
-    k=st['kuni'][ki]
-    if k['owner']==st['player']: st['msg']='自国は攻撃できません';render();return
-    # 攻撃側の兵力
+    target=st['kuni'][ki]
+    if target['owner']==st['player']: st['msg']='自国は攻撃できません';render();return
+
     my_kuni=[kk for kk in st['kuni'] if kk['owner']==st['player']]
     if not my_kuni: st['msg']='自国がありません';render();return
-    att_soldiers=sum(kk['soldiers'] for kk in my_kuni)
-    def_soldiers=k['soldiers']
-    # 戦闘計算
+
+    origin=min(my_kuni, key=lambda kk: abs(kk['r']-target['r'])+abs(kk['c']-target['c']))
+    dist=abs(origin['r']-target['r']) + abs(origin['c']-target['c'])
+    if dist > 3:
+        st['msg']='遠すぎて出兵できません'
+        render()
+        return
+
+    if target['owner'] in origin.get('allied',[]):
+        st['msg']='同盟国には攻撃できません'
+        render()
+        return
+
+    att_soldiers=origin['soldiers']
+    def_soldiers=target['soldiers']
+
     att_power=att_soldiers*(0.8+random.random()*0.4)
     def_power=def_soldiers*(0.8+random.random()*0.4)
+
     if att_power>def_power:
-        prev_owner=k['owner']
-        k['owner']=st['player']
-        k['soldiers']=max(10,int(att_soldiers*0.6))
-        for kk in my_kuni: kk['soldiers']=max(10,int(kk['soldiers']*0.7))
+        prev_owner=target['owner']
+        target['owner']=st['player']
+        target['soldiers']=max(10,int(att_soldiers*0.6))
+        origin['soldiers']=max(10,int(origin['soldiers']*0.6))
         prev=DAIMYO[prev_owner]['name'] if prev_owner>=0 else '中立'
-        st['msg']=f"勝利！{k['name']}を{prev}から奪取！"
+        st['msg']=f"勝利！{origin['name']}から出兵し、{target['name']}を{prev}から奪取！"
         check_victory()
     else:
-        for kk in my_kuni: kk['soldiers']=max(10,int(kk['soldiers']*0.5))
-        k['soldiers']=max(10,int(k['soldiers']*0.8))
-        st['msg']=f"敗北... {k['name']}の攻略に失敗した"
+        origin['soldiers']=max(10,int(origin['soldiers']*0.5))
+        target['soldiers']=max(10,int(target['soldiers']*0.8))
+        st['msg']=f"敗北... {origin['name']}からの出兵は失敗した"
     render()
 
 def check_victory():
@@ -288,25 +311,52 @@ def enemy_actions():
 def next_turn():
     if st['game_over']: return
     enemy_actions()
-    # 収入
     for k in st['kuni']:
         if k['owner']>=0:
+            k['soldiers']=max(10, int(k['soldiers']*0.95))
             k['soldiers']=min(k['soldiers']+k['koku']//20, k['koku']//2)
     st['turn']+=1
     st['msg']=f"{year_str()} {season_str()} ― 季節が変わった"
     render()
 
+def reset_game():
+    st['kuni']=[
+      {'name':'尾張','r':5,'c':7, 'owner':0,'koku':500,'soldiers':200,'allied':[]},
+      {'name':'甲斐','r':4,'c':9, 'owner':1,'koku':400,'soldiers':180,'allied':[]},
+      {'name':'越後','r':2,'c':9, 'owner':2,'koku':380,'soldiers':160,'allied':[]},
+      {'name':'安芸','r':6,'c':4, 'owner':3,'koku':420,'soldiers':170,'allied':[]},
+      {'name':'駿河','r':6,'c':9, 'owner':4,'koku':360,'soldiers':150,'allied':[]},
+      {'name':'近江','r':5,'c':6, 'owner':-1,'koku':300,'soldiers': 80,'allied':[]},
+      {'name':'三河','r':6,'c':8, 'owner':-1,'koku':280,'soldiers': 70,'allied':[]},
+      {'name':'美濃','r':4,'c':7, 'owner':-1,'koku':320,'soldiers': 90,'allied':[]},
+      {'name':'越前','r':3,'c':7, 'owner':-1,'koku':260,'soldiers': 60,'allied':[]},
+      {'name':'伊勢','r':6,'c':7, 'owner':-1,'koku':240,'soldiers': 50,'allied':[]},
+    ]
+    st['cx']=7;st['cy']=5;st['sel']=None;st['player']=0;st['turn']=0
+    st['msg']='尾張を選んで内政・外交・出兵を行え！'
+    st['atk_mode']=False;st['game_over']=False
+    render()
+
 def on_key(e):
-    if st['game_over']: return
     k=e.key
+    if st['game_over']:
+        if k=='r' or k=='R':
+            reset_game()
+        e.preventDefault()
+        return
     if   k=='ArrowUp':    st['cy']=max(0,st['cy']-1)
     elif k=='ArrowDown':  st['cy']=min(MAP_H-1,st['cy']+1)
     elif k=='ArrowLeft':  st['cx']=max(0,st['cx']-1)
-    elif k=='ArrowRight': st['cx']=min(MAP_W-1,st['cx']+1)
+    elif k=='ArrowRight': st['cx']=max(0,st['cx']-1) if False else min(MAP_W-1,st['cx']+1)
     elif k=='Enter':
         ki=nearest_kuni(st['cy'],st['cx'])
         st['sel']=ki
-    elif k=='n' or k=='N': next_turn(); return
+    elif k=='n' or k=='N':
+        next_turn()
+        return
+    elif k=='r' or k=='R':
+        reset_game()
+        return
     e.preventDefault()
     render()
 

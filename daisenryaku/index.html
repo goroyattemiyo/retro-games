@@ -67,6 +67,7 @@
       <span><kbd>A</kbd> 攻撃</span>
       <span><kbd>ENTER</kbd> ターン終了</span>
       <span><kbd>ESC</kbd> 選択解除</span>
+      <span><kbd>R</kbd> 再戦</span>
     </div>
     <div id="legend">
       <span style="color:#00ff41;">I</span>歩兵 &nbsp;
@@ -186,7 +187,7 @@ def enemy_turn():
     player_units=[u for u in st['units'] if u['team']==0]
     for eu in [u for u in st['units'] if u['team']==1]:
         if not player_units: break
-        target=player_units[0]
+        target=min(player_units, key=lambda t: abs(t['r']-eu['r'])+abs(t['c']-eu['c']))
         rng_val=UNITS[eu['type']]['range']
         ar=atk_range(eu['r'],eu['c'],rng_val)
         if (target['r'],target['c']) in ar:
@@ -204,7 +205,11 @@ def enemy_turn():
         eu['moved']=True;eu['attacked']=True
     check_victory()
     if not st['game_over']:
-        for u in st['units']: u['moved']=False;u['attacked']=False
+        for u in st['units']:
+            if st['map'][u['r']][u['c']] == CITY:
+                u['hp']=min(u['hp']+1, UNITS[u['type']]['hp'])
+            u['moved']=False
+            u['attacked']=False
         st['phase']=0;st['turn']+=1
         st['msg']=f"ターン {st['turn']} 開始"
     render()
@@ -213,9 +218,9 @@ def check_victory():
     p0=[u for u in st['units'] if u['team']==0]
     p1=[u for u in st['units'] if u['team']==1]
     if not p1:
-        st['msg']='*** 勝利！全敵ユニットを撃破！***';st['game_over']=True
+        st['msg']='*** 勝利！全敵ユニットを撃破！*** ENTERで再戦';st['game_over']=True
     elif not p0:
-        st['msg']='*** 敗北... 全ユニットが壊滅した ***';st['game_over']=True
+        st['msg']='*** 敗北... 全ユニットが壊滅した *** ENTERで再戦';st['game_over']=True
 
 TCLS={SEA:'c-sea',LAND:'c-land',MTN:'c-mtn',CITY:'c-city'}
 TCHAR={SEA:'~',LAND:'.',MTN:'^',CITY:'+'}
@@ -259,8 +264,19 @@ def render():
     document.getElementById('msg').textContent=st['msg']
 
 def on_key(e):
-    if st['game_over']: return
     k=e.key
+    if st['game_over']:
+        if k=='Enter' or k=='r' or k=='R':
+            init_units()
+            st['cx']=8;st['cy']=6;st['sel']=None
+            st['turn']=1;st['phase']=0
+            st['msg']='ユニットを選択してください'
+            st['move_range']=[];st['atk_range']=[]
+            st['game_over']=False
+            render()
+        e.preventDefault()
+        return
+
     if   k=='ArrowUp':    st['cy']=max(0,st['cy']-1)
     elif k=='ArrowDown':  st['cy']=min(H-1,st['cy']+1)
     elif k=='ArrowLeft':  st['cx']=max(0,st['cx']-1)

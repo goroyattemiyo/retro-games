@@ -144,6 +144,7 @@
       <span><kbd>↑↓←→</kbd> 移動</span>
       <span><kbd>WASD</kbd> 移動</span>
       <span><kbd>R</kbd> やり直し</span>
+      <span><kbd>U</kbd> 1手戻す</span>
       <span><kbd>N/P</kbd> ステージ</span>
     </div>
   </div>
@@ -272,7 +273,7 @@ if not S:
     S=[{"name":"STAGE 1","map":["#####","#.  #","#   #","#@$.#","#####"]}]
 W='#';F=' ';B='$';G='.';D='*';P='@';PG='+'
 DI={W:('#','cell-wall'),F:('.','cell-floor'),B:('$','cell-box'),G:('x','cell-goal'),D:('*','cell-done'),P:('@','cell-player'),PG:('+','cell-player-goal')}
-st={'i':0,'g':[],'p':(0,0),'m':0,'c':False}
+st={'i':0,'g':[],'p':(0,0),'m':0,'c':False,'history':[]}
 
 def ps(i):
   r=[list(x) for x in S[i]['map']];p=(0,0)
@@ -282,7 +283,7 @@ def ps(i):
   return r,p
 
 def ls(i):
-  st['i']=i;st['g'],st['p']=ps(i);st['m']=0;st['c']=False;rd()
+  st['i']=i;st['g'],st['p']=ps(i);st['m']=0;st['c']=False;st['history']=[];rd()
 
 def cb(g):
   pl=sum(row.count(D) for row in g)
@@ -291,9 +292,19 @@ def cb(g):
 
 def ic(g): return not any(B in row for row in g)
 
+def undo():
+  if not st['history'] or st['c']:
+    return
+  g,p,m=st['history'].pop()
+  st['g']=[row[:] for row in g]
+  st['p']=p
+  st['m']=m
+  rd()
+
 def mv(dr,dc):
   if st['c']:return
   r,c=st['p'];nr,nc=r+dr,c+dc;g=st['g']
+  st['history'].append(( [row[:] for row in g], st['p'], st['m']))
   if nr<0 or nr>=len(g) or nc<0 or nc>=len(g[nr]):return
   t=g[nr][nc]
   if t==W:return
@@ -318,7 +329,7 @@ def rd():
   document.getElementById('stage-name').textContent=S[st['i']]['name']
   ga=document.getElementById('ga')
   if st['c']:
-    ga.innerHTML='<div id="cs"><div class="big">*** CLEAR! ***</div><p>MOVES: '+str(st['m'])+'</p></div>'
+    ga.innerHTML='<div id="cs"><div class="big">*** CLEAR! ***</div><p>MOVES: '+str(st['m'])+'</p><p>N で次のステージへ / P で前のステージへ</p></div>'
     return
   # 各行を固定幅でレンダリング - rowをそのままループしてspanを並べる
   lines=[]
@@ -338,6 +349,7 @@ def ok(e):
   elif k=='ArrowLeft'  or k=='a':mv( 0,-1)
   elif k=='ArrowRight' or k=='d':mv( 0, 1)
   elif k in('r','R'):ls(st['i'])
+  elif k in('u','U'):undo()
   elif k in('n','N'):
     if st['i']<len(S)-1:ls(st['i']+1)
   elif k in('p','P'):
