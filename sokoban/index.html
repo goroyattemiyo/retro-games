@@ -160,13 +160,100 @@
 from pyscript import document
 from pyodide.ffi import create_proxy
 
-S=[
-  {"name":"STAGE 1","map":["#####","#.  #","#   #","#@$.#","#####"]},
-  {"name":"STAGE 2","map":["  #####","  #   #","  #$  #","###  $##","#  $ . #","# . #. #","#   @  #","########"]},
-  {"name":"STAGE 3","map":["  ####","###  ####","#  $  . #","# $@$   #","##  .#. #","#  $ .  #","#   ####","#####"]},
-  {"name":"STAGE 4","map":["   #####","   #@  #","   #$  #"," ###.  #"," #.$ ###"," #    # ","## ## # ","#  .  # ","#     # ","#######"]},
-  {"name":"STAGE 5","map":["#########","# . # . #","# $   $ #","#   @   #","# $   $ #","# . # . #","#########"]},
-]
+S=[]
+def gen_stage(num, seed=None):
+    import random
+    rng=random.Random(seed)
+    W2,H2=9,7
+    # 外壁
+    grid=[['#']*W2 for _ in range(H2)]
+    for r in range(1,H2-1):
+        for cc in range(1,W2-1):
+            grid[r][cc]=' '
+    # 内壁をランダムに追加
+    for _ in range(4):
+        r=rng.randint(1,H2-2)
+        cc=rng.randint(1,W2-2)
+        grid[r][cc]='#'
+    # 空きマス一覧
+    def empty():
+        return [(r,c) for r in range(H2) for c in range(W2) if grid[r][c]==' ']
+    def neighbors(r,c):
+        return [(r+dr,c+dc,dr,dc) for dr,dc in[(-1,0),(1,0),(0,-1),(0,1)]]
+    # BFSで連結空きマス
+    def reachable(sr,sc):
+        visited=set();q=[(sr,sc)];visited.add((sr,sc))
+        while q:
+            r,c=q.pop(0)
+            for nr,nc,_,_ in neighbors(r,c):
+                if (nr,nc) not in visited and grid[nr][nc]!='#':
+                    visited.add((nr,nc));q.append((nr,nc))
+        return visited
+    # 空きマスが連結かチェック
+    emp=empty()
+    if not emp: return None
+    if len(reachable(*emp[0])) < len(emp)-2: return None
+    # ゴール数
+    n_boxes=min(2, len(emp)//4)
+    if n_boxes<1: return None
+    rng.shuffle(emp)
+    goals=emp[:n_boxes]
+    # 逆算: 箱をゴールに置いてプレイヤーが引っ張るシミュレーション
+    boxes=list(goals)
+    # プレイヤー初期位置(箱の隣)
+    player=None
+    for br,bc in boxes:
+        for nr,nc,dr,dc in neighbors(br,bc):
+            if grid[nr][nc]!='#' and (nr,nc) not in boxes:
+                player=(nr,nc);break
+        if player:break
+    if not player: return None
+    # 逆引き移動シミュレーション
+    state=(tuple(map(tuple,boxes)),player)
+    for _ in range(30):
+        br,bc=boxes[rng.randint(0,len(boxes)-1)]
+        dr,dc=rng.choice([(-1,0),(1,0),(0,-1),(0,1)])
+        # 逆算: 箱を(dr,dc)方向に引くにはプレイヤーが箱の(dr,dc)側にいる
+        pr,pc=br+dr,bc+dc   # 箱を引いた後の箱位置
+        plr,plc=br-dr,bc-dc # プレイヤーが引く前にいる位置
+        nb_r,nb_c=br+dr,bc+dc
+        if(nb_r<0 or nb_r>=H2 or nb_c<0 or nb_c>=W2): continue
+        if grid[nb_r][nb_c]=='#': continue
+        if(plr<0 or plr>=H2 or plc<0 or plc>=W2): continue
+        if grid[plr][plc]=='#': continue
+        if(nb_r,nb_c) in boxes: continue
+        idx=boxes.index((br,bc))
+        boxes[idx]=(nb_r,nb_c)
+        player=(br,bc)
+    # プレイヤーと箱がゴール上にないか確認
+    for i,(br,bc) in enumerate(boxes):
+        if (br,bc) in goals:
+            boxes[i]=(br+1,bc) if br+1<H2-1 and grid[br+1][bc]!='#' else (br,bc)
+    # マップ組み立て
+    result=[row[:] for row in grid]
+    for gr,gc in goals: result[gr][gc]='.'
+    for br,bc in boxes:
+        if result[br][bc]=='.': result[br][bc]='*'
+        else: result[br][bc]='$'
+    pr,pc=player
+    if result[pr][pc]=='.': result[pr][pc]='+'
+    else: result[pr][pc]='@'
+    return {"name":f"STAGE {num}","map":[''.join(row) for row in result]}
+
+# 起動時に5ステージ生成
+import random
+for i in range(5):
+    s=None
+    for seed in range(100):
+        s=gen_stage(i+1, seed=i*100+seed)
+        if s:
+            # 箱とゴール数確認
+            boxes=sum(row.count('$')+row.count('*') for row in s['map'])
+            goals=sum(row.count('.')+row.count('*')+row.count('+') for row in s['map'])
+            if boxes==goals and boxes>0: break
+    if s: S.append(s)
+if not S:
+    S=[{"name":"STAGE 1","map":["#####","#.  #","#   #","#@$.#","#####"]}]
 W='#';F=' ';B='$';G='.';D='*';P='@';PG='+'
 DI={W:('#','cell-wall'),F:('.','cell-floor'),B:('$','cell-box'),G:('x','cell-goal'),D:('*','cell-done'),P:('@','cell-player'),PG:('+','cell-player-goal')}
 st={'i':0,'g':[],'p':(0,0),'m':0,'c':False}
