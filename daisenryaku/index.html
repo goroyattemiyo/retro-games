@@ -2,38 +2,335 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>大戦略 - RETRO GAME CENTER</title>
+  <title>大戦略 - DAISENRYAKU</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
   <style>
-    :root{--c:#00e5ff;--bg:#000d02;--gd:#003f0f;--gm:#00aa2a;--sl:rgba(0,255,65,.025);}
+    :root{--green:#00ff41;--green-dim:#00aa2a;--green-dark:#003f0f;--green-faint:#001a06;--amber:#ffb300;--cyan:#00e5ff;--red:#ff3b3b;--bg:#000d02;--sl:rgba(0,255,65,.03);}
     *{margin:0;padding:0;box-sizing:border-box;}
-    body{background:var(--bg);color:var(--c);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+    body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
     body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
     body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
-    #box{width:min(560px,95vw);border:2px solid var(--gm);background:#000;}
-    #tb{background:var(--gd);border-bottom:1px solid var(--gm);padding:4px 12px;display:flex;justify-content:space-between;font-size:11px;color:var(--gm);letter-spacing:2px;}
-    #tb a{color:var(--gm);text-decoration:none;} #tb a:hover{color:#00ff41;}
-    #bd{padding:40px 30px;text-align:center;}
-    h1{font-family:'DotGothic16',monospace;font-size:clamp(24px,6vw,40px);color:var(--c);text-shadow:0 0 12px var(--c);letter-spacing:6px;margin-bottom:8px;}
-    .ge{font-size:11px;color:var(--gm);letter-spacing:4px;margin-bottom:32px;}
-    .wip{border:1px solid var(--c);padding:16px 32px;display:inline-block;margin-bottom:32px;opacity:.6;}
-    .wip span{font-size:18px;color:var(--c);letter-spacing:4px;}
-    .msg{font-size:12px;color:var(--gm);line-height:1.9;}
-    a.back{display:inline-block;margin-top:24px;color:var(--gm);font-size:12px;text-decoration:none;border:1px solid var(--gd);padding:6px 16px;letter-spacing:2px;}
-    a.back:hover{color:#00ff41;border-color:var(--gm);}
-    .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+    #terminal{width:min(1100px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(0,255,65,.2);background:var(--bg);}
+    #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
+    #tb a{color:var(--green-dim);text-decoration:none;}#tb a:hover{color:var(--green);}
+    .blink{animation:blink 1s step-end infinite;}@keyframes blink{50%{opacity:0;}}
+    #screen{padding:16px;}
+    #hd{text-align:center;margin-bottom:12px;border-bottom:1px solid var(--green-dark);padding-bottom:10px;}
+    #hd h1{font-family:'DotGothic16',monospace;font-size:26px;text-shadow:0 0 10px var(--cyan);letter-spacing:8px;color:var(--cyan);}
+    #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
+    #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:10px;text-align:center;margin-bottom:8px;}
+    #ga{font-family:'Share Tech Mono',monospace;font-size:clamp(16px,2.8vw,26px);line-height:1.4;letter-spacing:0.05em;white-space:pre;display:inline-block;cursor:default;}
+    #ga span{display:inline;}
+    .c-sea  {color:#003366;}
+    .c-land {color:#002208;}
+    .c-mtn  {color:#444;}
+    .c-city {color:#888;}
+    .c-p0   {color:#00ff41;text-shadow:0 0 4px #00ff41;}
+    .c-p1   {color:#ff3b3b;text-shadow:0 0 4px #ff3b3b;}
+    .c-p2   {color:#ffb300;text-shadow:0 0 4px #ffb300;}
+    .c-p3   {color:#00e5ff;text-shadow:0 0 4px #00e5ff;}
+    .c-p4   {color:#ff80ab;text-shadow:0 0 4px #ff80ab;}
+    .c-cursor{background:rgba(255,255,255,0.2);}
+    .c-sel  {background:rgba(0,255,65,0.25);}
+    #statusbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+    .stat-block{display:flex;align-items:center;gap:6px;border:1px solid var(--green-dark);background:var(--green-faint);padding:4px 10px;}
+    .stat-label{font-size:10px;color:var(--green-dark);letter-spacing:2px;white-space:nowrap;}
+    .stat-value{font-size:15px;color:var(--green);}
+    #msg{font-size:12px;color:var(--amber);min-height:18px;margin-bottom:6px;letter-spacing:1px;text-align:center;}
+    #ctrl{border-top:1px solid var(--green-dark);padding-top:8px;font-size:13px;color:var(--green-dim);display:flex;justify-content:center;gap:16px;flex-wrap:wrap;}
+    #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:2px 6px;color:var(--green);font-family:inherit;font-size:13px;}
+    #legend{margin-top:8px;font-size:11px;color:var(--green-dim);line-height:1.8;border:1px solid var(--green-dark);padding:6px 12px;background:var(--green-faint);}
   </style>
 </head>
 <body>
-<div id="box">
-  <div id="tb"><span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; DAISENRYAKU.EXE</span><span class="blink">■</span><span>PC-9801</span></div>
-  <div id="bd">
-    <h1>大戦略</h1>
-    <div class="ge">WAR STRATEGY / SIMULATION</div>
-    <div class="wip"><span>-- UNDER CONSTRUCTION --</span></div>
-    <div class="msg">このゲームは現在開発中です。<br>しばらくお待ちください。<br><br><span class="blink">█</span></div>
-    <a class="back" href="../index.html">◀ MENU に戻る</a>
+<div id="terminal">
+  <div id="tb">
+    <span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; DAISENRYAKU.EXE ver 1.00</span>
+    <span class="blink">■</span><span>PC-9801</span>
+  </div>
+  <div id="screen">
+    <div id="hd"><h1>大戦略</h1><div class="sub">DAISENRYAKU &mdash; WAR STRATEGY</div></div>
+    <div id="map-wrap"><div id="ga">LOADING...</div></div>
+    <div id="msg"></div>
+    <div id="statusbar">
+      <div class="stat-block"><div class="stat-label">TURN</div><div class="stat-value" id="s-turn">1</div></div>
+      <div class="stat-block"><div class="stat-label">PHASE</div><div class="stat-value" id="s-phase">自軍</div></div>
+      <div class="stat-block"><div class="stat-label" style="color:#00ff41">自軍</div><div class="stat-value" id="s-p0">-</div></div>
+      <div class="stat-block"><div class="stat-label" style="color:#ff3b3b">敵軍</div><div class="stat-value" id="s-p1">-</div></div>
+      <div class="stat-block"><div class="stat-label">SELECTED</div><div class="stat-value" id="s-sel">-</div></div>
+    </div>
+    <div id="ctrl">
+      <span><kbd>↑↓←→</kbd> 移動</span>
+      <span><kbd>SPACE</kbd> 選択/移動</span>
+      <span><kbd>A</kbd> 攻撃</span>
+      <span><kbd>ENTER</kbd> ターン終了</span>
+      <span><kbd>ESC</kbd> 選択解除</span>
+    </div>
+    <div id="legend">
+      <span style="color:#00ff41;">I</span>歩兵 &nbsp;
+      <span style="color:#00ff41;">T</span>戦車 &nbsp;
+      <span style="color:#00ff41;">F</span>戦闘機 &nbsp;
+      <span style="color:#00ff41;">S</span>艦船 &nbsp;|&nbsp;
+      <span style="color:#888;">+</span>都市(補給) &nbsp;
+      <span style="color:#444;">^</span>山 &nbsp;
+      <span style="color:#003366;">~</span>海
+    </div>
   </div>
 </div>
+<script type="py">
+from pyscript import document
+from pyodide.ffi import create_proxy
+import random
+
+W,H=16,12
+SEA='~';LAND='.';MTN='^';CITY='+'
+UNITS={'I':{'name':'歩兵','hp':3,'atk':2,'mov':2,'range':1,'type':'land'},
+       'T':{'name':'戦車','hp':5,'atk':4,'mov':3,'range':1,'type':'land'},
+       'F':{'name':'戦闘機','hp':3,'atk':5,'mov':5,'range':2,'type':'air'},
+       'S':{'name':'艦船','hp':6,'atk':3,'mov':2,'range':2,'type':'sea'}}
+TCOL=['c-p0','c-p1','c-p2','c-p3','c-p4']
+TNAMES=['自軍','敵軍']
+
+def mk_map():
+    g=[[LAND]*W for _ in range(H)]
+    # 海を左右に
+    for r in range(H):
+        for c in range(3): g[r][c]=SEA
+        for c in range(W-2,W): g[r][c]=SEA
+    # 山をランダム
+    rng=random.Random(42)
+    for _ in range(12):
+        r=rng.randint(1,H-2);c=rng.randint(4,W-5)
+        g[r][c]=MTN
+    # 都市
+    for r,c in [(2,5),(5,8),(9,10),(3,12),(7,4),(10,7)]:
+        if 0<=r<H and 0<=c<W: g[r][c]=CITY
+    return g
+
+st={
+    'map':mk_map(),
+    'units':[],  # {r,c,type,team,hp,moved,attacked}
+    'cx':8,'cy':6,
+    'sel':None,
+    'turn':1,
+    'phase':0,  # 0=player,1=enemy
+    'msg':'ユニットを選択してください',
+    'move_range':[],
+    'atk_range':[],
+    'game_over':False,
+}
+
+def init_units():
+    st['units']=[
+        {'r':1,'c':5,'type':'I','team':0,'hp':3,'moved':False,'attacked':False},
+        {'r':2,'c':6,'type':'T','team':0,'hp':5,'moved':False,'attacked':False},
+        {'r':3,'c':4,'type':'F','team':0,'hp':3,'moved':False,'attacked':False},
+        {'r':H-2,'c':W-6,'type':'I','team':1,'hp':3,'moved':False,'attacked':False},
+        {'r':H-3,'c':W-7,'type':'T','team':1,'hp':5,'moved':False,'attacked':False},
+        {'r':H-4,'c':W-5,'type':'F','team':1,'hp':3,'moved':False,'attacked':False},
+    ]
+
+def unit_at(r,c):
+    for u in st['units']:
+        if u['r']==r and u['c']==c: return u
+    return None
+
+def terrain_cost(r,c,utype):
+    t=st['map'][r][c]
+    if utype=='sea': return 1 if t==SEA else 99
+    if utype=='air': return 1
+    if t==SEA: return 99
+    if t==MTN: return 2
+    return 1
+
+def bfs_move(sr,sc,mov,utype):
+    from collections import deque
+    dist={( sr,sc):0};q=deque([(sr,sc,0)])
+    while q:
+        r,c,d=q.popleft()
+        for dr,dc in[(-1,0),(1,0),(0,-1),(0,1)]:
+            nr,nc=r+dr,c+dc
+            if not(0<=nr<H and 0<=nc<W): continue
+            cost=terrain_cost(nr,nc,utype)
+            nd=d+cost
+            if nd<=mov and (nr,nc) not in dist:
+                u=unit_at(nr,nc)
+                if u is None:
+                    dist[(nr,nc)]=nd
+                    q.append((nr,nc,nd))
+    return list(dist.keys())
+
+def atk_range(r,c,rng_val):
+    cells=[]
+    for dr in range(-rng_val,rng_val+1):
+        for dc in range(-rng_val,rng_val+1):
+            if abs(dr)+abs(dc)<=rng_val and (dr,dc)!=(0,0):
+                nr,nc=r+dr,c+dc
+                if 0<=nr<H and 0<=nc<W: cells.append((nr,nc))
+    return cells
+
+def do_attack(attacker,defender):
+    dmg=max(1,UNITS[attacker['type']]['atk']-1+random.randint(0,2))
+    defender['hp']-=dmg
+    msg=f"{TNAMES[attacker['team']]}の{UNITS[attacker['type']]['name']}が攻撃！ {dmg}ダメージ"
+    if defender['hp']<=0:
+        st['units'].remove(defender)
+        msg+=f" → {UNITS[defender['type']]['name']}を撃破！"
+    attacker['attacked']=True;attacker['moved']=True
+    st['msg']=msg
+
+def enemy_turn():
+    st['msg']='敵ターン...'
+    player_units=[u for u in st['units'] if u['team']==0]
+    for eu in [u for u in st['units'] if u['team']==1]:
+        if not player_units: break
+        target=player_units[0]
+        rng_val=UNITS[eu['type']]['range']
+        ar=atk_range(eu['r'],eu['c'],rng_val)
+        if (target['r'],target['c']) in ar:
+            do_attack(eu,target)
+            if target not in st['units']: player_units.remove(target)
+        else:
+            mov=UNITS[eu['type']]['mov']
+            utype=UNITS[eu['type']]['type']
+            reachable=bfs_move(eu['r'],eu['c'],mov,utype)
+            best=None;bd=999
+            for nr,nc in reachable:
+                d=abs(nr-target['r'])+abs(nc-target['c'])
+                if d<bd: bd=d;best=(nr,nc)
+            if best: eu['r'],eu['c']=best
+        eu['moved']=True;eu['attacked']=True
+    check_victory()
+    if not st['game_over']:
+        for u in st['units']: u['moved']=False;u['attacked']=False
+        st['phase']=0;st['turn']+=1
+        st['msg']=f"ターン {st['turn']} 開始"
+    render()
+
+def check_victory():
+    p0=[u for u in st['units'] if u['team']==0]
+    p1=[u for u in st['units'] if u['team']==1]
+    if not p1:
+        st['msg']='*** 勝利！全敵ユニットを撃破！***';st['game_over']=True
+    elif not p0:
+        st['msg']='*** 敗北... 全ユニットが壊滅した ***';st['game_over']=True
+
+TCLS={SEA:'c-sea',LAND:'c-land',MTN:'c-mtn',CITY:'c-city'}
+TCHAR={SEA:'~',LAND:'.',MTN:'^',CITY:'+'}
+
+def render():
+    g=st['map'];cx=st['cx'];cy=st['cy']
+    sel=st['sel']
+    mr=set(st['move_range']);ar=set(st['atk_range'])
+    lines=[]
+    for r in range(H):
+        line=''
+        for c in range(W):
+            u=unit_at(r,c)
+            is_cur=(r==cy and c==cx)
+            is_mr=(r,c) in mr
+            is_ar=(r,c) in ar
+            if u:
+                ch=u['type']
+                cls=TCOL[u['team']]
+            else:
+                ch=TCHAR.get(g[r][c],'.')
+                cls=TCLS.get(g[r][c],'c-land')
+            extra=''
+            if is_cur: extra+=' c-cursor'
+            elif is_ar: extra+=' c-p1'
+            elif is_mr: extra+=' c-sel'
+            line+=f'<span class="{cls}{extra}">{ch}</span>'
+        lines.append(line)
+    document.getElementById('ga').innerHTML='\n'.join(lines)
+    document.getElementById('s-turn').textContent=str(st['turn'])
+    document.getElementById('s-phase').textContent='自軍' if st['phase']==0 else '敵軍'
+    p0=[u for u in st['units'] if u['team']==0]
+    p1=[u for u in st['units'] if u['team']==1]
+    document.getElementById('s-p0').textContent=str(len(p0))+'units'
+    document.getElementById('s-p1').textContent=str(len(p1))+'units'
+    if st['sel'] is not None:
+        u=st['sel']
+        document.getElementById('s-sel').textContent=f"{UNITS[u['type']]['name']} HP:{u['hp']}"
+    else:
+        document.getElementById('s-sel').textContent='-'
+    document.getElementById('msg').textContent=st['msg']
+
+def on_key(e):
+    if st['game_over']: return
+    k=e.key
+    if   k=='ArrowUp':    st['cy']=max(0,st['cy']-1)
+    elif k=='ArrowDown':  st['cy']=min(H-1,st['cy']+1)
+    elif k=='ArrowLeft':  st['cx']=max(0,st['cx']-1)
+    elif k=='ArrowRight': st['cx']=min(W-1,st['cx']+1)
+    elif k==' ':
+        if st['phase']==0: handle_space()
+    elif k=='a' or k=='A':
+        if st['phase']==0: handle_attack()
+    elif k=='Escape':
+        st['sel']=None;st['move_range']=[];st['atk_range']=[]
+        st['msg']='選択解除'
+    elif k=='Enter':
+        if st['phase']==0: end_player_turn()
+    e.preventDefault()
+    render()
+
+def handle_space():
+    r,c=st['cy'],st['cx']
+    sel=st['sel']
+    if sel is None:
+        u=unit_at(r,c)
+        if u and u['team']==0 and not u['moved']:
+            st['sel']=u
+            mov=UNITS[u['type']]['mov']
+            utype=UNITS[u['type']]['type']
+            st['move_range']=bfs_move(u['r'],u['c'],mov,utype)
+            st['atk_range']=[]
+            st['msg']=f"{UNITS[u['type']]['name']}を選択 (移動力:{mov})"
+        else:
+            st['msg']='そこには移動できるユニットがありません'
+    else:
+        if (r,c) in st['move_range']:
+            sel['r']=r;sel['c']=c;sel['moved']=True
+            st['sel']=None;st['move_range']=[];st['atk_range']=[]
+            st['msg']=f"移動完了"
+        else:
+            st['msg']='移動範囲外です'
+
+def handle_attack():
+    r,c=st['cy'],st['cx']
+    sel=st['sel']
+    if sel is None:
+        u=unit_at(r,c)
+        if u and u['team']==0 and not u['attacked']:
+            st['sel']=u
+            rng_val=UNITS[u['type']]['range']
+            st['atk_range']=atk_range(u['r'],u['c'],rng_val)
+            st['move_range']=[]
+            st['msg']=f"攻撃目標を選んでSPACEで攻撃"
+    else:
+        if (r,c) in st['atk_range']:
+            target=unit_at(r,c)
+            if target and target['team']!=sel['team']:
+                do_attack(sel,target)
+                st['sel']=None;st['move_range']=[];st['atk_range']=[]
+                check_victory()
+            else:
+                st['msg']='そこに敵ユニットがありません'
+        else:
+            st['msg']='攻撃範囲外です'
+
+def end_player_turn():
+    st['sel']=None;st['move_range']=[];st['atk_range']=[]
+    st['phase']=1;st['msg']='敵ターン開始...'
+    render()
+    enemy_turn()
+
+init_units()
+render()
+document.addEventListener('keydown',create_proxy(on_key))
+</script>
 </body>
 </html>
