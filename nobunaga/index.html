@@ -2,38 +2,322 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>信長の野望 - RETRO GAME CENTER</title>
+  <title>信長の野望 - NOBUNAGA</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
   <style>
-    :root{--c:#ff6b35;--bg:#000d02;--gd:#003f0f;--gm:#00aa2a;--sl:rgba(0,255,65,.025);}
+    :root{--green:#00ff41;--green-dim:#00aa2a;--green-dark:#003f0f;--green-faint:#001a06;--amber:#ffb300;--cyan:#00e5ff;--red:#ff3b3b;--orange:#ff6b35;--bg:#000d02;--sl:rgba(0,255,65,.03);}
     *{margin:0;padding:0;box-sizing:border-box;}
-    body{background:var(--bg);color:var(--c);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+    body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
     body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
     body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
-    #box{width:min(560px,95vw);border:2px solid var(--gm);background:#000;}
-    #tb{background:var(--gd);border-bottom:1px solid var(--gm);padding:4px 12px;display:flex;justify-content:space-between;font-size:11px;color:var(--gm);letter-spacing:2px;}
-    #tb a{color:var(--gm);text-decoration:none;} #tb a:hover{color:#00ff41;}
-    #bd{padding:40px 30px;text-align:center;}
-    h1{font-family:'DotGothic16',monospace;font-size:clamp(24px,6vw,40px);color:var(--c);text-shadow:0 0 12px var(--c);letter-spacing:6px;margin-bottom:8px;}
-    .ge{font-size:11px;color:var(--gm);letter-spacing:4px;margin-bottom:32px;}
-    .wip{border:1px solid var(--c);padding:16px 32px;display:inline-block;margin-bottom:32px;opacity:.6;}
-    .wip span{font-size:18px;color:var(--c);letter-spacing:4px;}
-    .msg{font-size:12px;color:var(--gm);line-height:1.9;}
-    a.back{display:inline-block;margin-top:24px;color:var(--gm);font-size:12px;text-decoration:none;border:1px solid var(--gd);padding:6px 16px;letter-spacing:2px;}
-    a.back:hover{color:#00ff41;border-color:var(--gm);}
-    .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+    #terminal{width:min(1100px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(0,255,65,.2);background:var(--bg);}
+    #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
+    #tb a{color:var(--green-dim);text-decoration:none;}#tb a:hover{color:var(--green);}
+    .blink{animation:blink 1s step-end infinite;}@keyframes blink{50%{opacity:0;}}
+    #screen{padding:16px;}
+    #hd{text-align:center;margin-bottom:12px;border-bottom:1px solid var(--green-dark);padding-bottom:10px;}
+    #hd h1{font-family:'DotGothic16',monospace;font-size:26px;text-shadow:0 0 10px var(--orange);letter-spacing:8px;color:var(--orange);}
+    #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
+
+    /* メインレイアウト：マップ上・情報下 */
+    #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:10px;text-align:center;margin-bottom:8px;}
+    #ga{font-family:'Share Tech Mono',monospace;font-size:clamp(18px,3vw,28px);line-height:1.5;letter-spacing:0.1em;white-space:pre;display:inline-block;}
+
+    /* 大名カラー */
+    .d0{color:#00ff41;} .d1{color:#ff3b3b;} .d2{color:#ffb300;}
+    .d3{color:#00e5ff;} .d4{color:#ff80ab;} .neutral{color:#444;}
+    .d-cursor{background:rgba(255,255,255,0.2);}
+    .d-sel{background:rgba(255,179,0,0.2);}
+
+    /* ステータスバー */
+    #statusbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center;}
+    .stat-block{display:flex;align-items:center;gap:6px;border:1px solid var(--green-dark);background:var(--green-faint);padding:4px 10px;}
+    .stat-label{font-size:10px;color:var(--green-dark);letter-spacing:2px;white-space:nowrap;}
+    .stat-value{font-size:14px;color:var(--green);}
+
+    /* コマンドパネル */
+    #cmdpanel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+    .cbtn{background:var(--green-dark);border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 12px;cursor:pointer;letter-spacing:1px;transition:all .1s;}
+    .cbtn:hover{background:var(--green-dim);color:var(--bg);}
+    .cbtn:disabled{opacity:0.3;cursor:not-allowed;}
+    .cbtn.danger{border-color:#ff3b3b;color:#ff3b3b;}
+    .cbtn.danger:hover{background:#ff3b3b;color:#000;}
+
+    #msg{text-align:center;font-size:12px;color:var(--amber);min-height:18px;margin-bottom:6px;letter-spacing:1px;}
+    #detail{border:1px solid var(--green-dark);padding:8px 12px;background:var(--green-faint);font-size:11px;color:var(--green-dim);line-height:1.8;margin-bottom:8px;min-height:36px;}
+    #ctrl{border-top:1px solid var(--green-dark);padding-top:8px;font-size:13px;color:var(--green-dim);display:flex;justify-content:center;gap:16px;flex-wrap:wrap;}
+    #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:2px 6px;color:var(--green);font-family:inherit;font-size:13px;}
   </style>
 </head>
 <body>
-<div id="box">
-  <div id="tb"><span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; NOBUNAGA.EXE</span><span class="blink">■</span><span>PC-9801</span></div>
-  <div id="bd">
-    <h1>信長の野望</h1>
-    <div class="ge">HISTORY / STRATEGY</div>
-    <div class="wip"><span>-- UNDER CONSTRUCTION --</span></div>
-    <div class="msg">このゲームは現在開発中です。<br>しばらくお待ちください。<br><br><span class="blink">█</span></div>
-    <a class="back" href="../index.html">◀ MENU に戻る</a>
+<div id="terminal">
+  <div id="tb">
+    <span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; NOBUNAGA.EXE ver 1.00</span>
+    <span class="blink">■</span><span>PC-9801</span>
+  </div>
+  <div id="screen">
+    <div id="hd"><h1>信長の野望</h1><div class="sub">NOBUNAGA NO YABO &mdash; SENGOKU STRATEGY</div></div>
+    <div id="map-wrap"><div id="ga">LOADING...</div></div>
+    <div id="msg"></div>
+    <div id="detail">国を選択してください</div>
+    <div id="cmdpanel">
+      <button class="cbtn" id="c-naisei">内政 (農業+)</button>
+      <button class="cbtn" id="c-shogun">徴兵 (兵+)</button>
+      <button class="cbtn" id="c-gaiko">外交 (同盟)</button>
+      <button class="cbtn danger" id="c-attack">出兵 (攻撃)</button>
+      <button class="cbtn" id="c-next" style="margin-left:auto;">▶ 次の季節</button>
+    </div>
+    <div id="statusbar">
+      <div class="stat-block"><div class="stat-label">年代</div><div class="stat-value" id="s-year">天正元年</div></div>
+      <div class="stat-block"><div class="stat-label">季節</div><div class="stat-value" id="s-season">春</div></div>
+      <div class="stat-block"><div class="stat-label" style="color:#00ff41">織田</div><div class="stat-value" id="s-p0">-</div></div>
+      <div class="stat-block"><div class="stat-label" style="color:#ff3b3b">武田</div><div class="stat-value" id="s-p1">-</div></div>
+      <div class="stat-block"><div class="stat-label" style="color:#ffb300">上杉</div><div class="stat-value" id="s-p2">-</div></div>
+      <div class="stat-block"><div class="stat-label" style="color:#00e5ff">毛利</div><div class="stat-value" id="s-p3">-</div></div>
+      <div class="stat-block"><div class="stat-label" style="color:#ff80ab">今川</div><div class="stat-value" id="s-p4">-</div></div>
+    </div>
+    <div id="ctrl">
+      <span><kbd>↑↓←→</kbd> 国選択</span>
+      <span><kbd>ENTER</kbd> 決定</span>
+      <span><kbd>N</kbd> 次の季節</span>
+    </div>
   </div>
 </div>
+<script type="py">
+from pyscript import document
+from pyodide.ffi import create_proxy
+import random
+
+# === 国データ (r,c はマップ上の位置) ===
+DAIMYO=[
+  {'name':'織田','cls':'d0','color':'#00ff41'},
+  {'name':'武田','cls':'d1','color':'#ff3b3b'},
+  {'name':'上杉','cls':'d2','color':'#ffb300'},
+  {'name':'毛利','cls':'d3','color':'#00e5ff'},
+  {'name':'今川','cls':'d4','color':'#ff80ab'},
+]
+NEUTRAL_NAME='中立'
+
+# 国一覧 (owner: 0-4=大名, -1=中立)
+KUNI=[
+  {'name':'尾張','r':5,'c':7, 'owner':0,'koku':500,'soldiers':200,'allied':[]},
+  {'name':'甲斐','r':4,'c':9, 'owner':1,'koku':400,'soldiers':180,'allied':[]},
+  {'name':'越後','r':2,'c':9, 'owner':2,'koku':380,'soldiers':160,'allied':[]},
+  {'name':'安芸','r':6,'c':4, 'owner':3,'koku':420,'soldiers':170,'allied':[]},
+  {'name':'駿河','r':6,'c':9, 'owner':4,'koku':360,'soldiers':150,'allied':[]},
+  {'name':'近江','r':5,'c':6, 'owner':-1,'koku':300,'soldiers': 80,'allied':[]},
+  {'name':'三河','r':6,'c':8, 'owner':-1,'koku':280,'soldiers': 70,'allied':[]},
+  {'name':'美濃','r':4,'c':7, 'owner':-1,'koku':320,'soldiers': 90,'allied':[]},
+  {'name':'越前','r':3,'c':7, 'owner':-1,'koku':260,'soldiers': 60,'allied':[]},
+  {'name':'伊勢','r':6,'c':7, 'owner':-1,'koku':240,'soldiers': 50,'allied':[]},
+]
+
+MAP_W,MAP_H=16,10
+
+SEASONS=['春','夏','秋','冬']
+YEAR_BASE=1573
+
+st={
+    'kuni':KUNI,
+    'cx':7,'cy':5,
+    'sel':None,     # 選択中の国index
+    'player':0,     # プレイヤー大名
+    'turn':0,       # 季節カウント
+    'msg':'尾張を選んで内政・外交・出兵を行え！',
+    'atk_mode':False,
+    'game_over':False,
+}
+
+def year_str():
+    y=YEAR_BASE+st['turn']//4
+    return f"天正{y-1572}年"
+
+def season_str():
+    return SEASONS[st['turn']%4]
+
+def kuni_at(r,c):
+    for i,k in enumerate(st['kuni']):
+        if k['r']==r and k['c']==c: return i
+    return None
+
+def nearest_kuni(r,c):
+    best=None;bd=999
+    for i,k in enumerate(st['kuni']):
+        d=abs(k['r']-r)+abs(k['c']-c)
+        if d<bd: bd=d;best=i
+    return best
+
+def render_map():
+    kuni=st['kuni'];cx=st['cx'];cy=st['cy'];sel=st['sel']
+    # 空グリッド
+    cells=[[('·','neutral')]*MAP_W for _ in range(MAP_H)]
+    for i,k in enumerate(kuni):
+        r,c=k['r'],k['c']
+        owner=k['owner']
+        if owner>=0:
+            ch=DAIMYO[owner]['name'][0]
+            cls=DAIMYO[owner]['cls']
+        else:
+            ch=k['name'][0]
+            cls='neutral'
+        extra=''
+        if cy==r and cx==c: extra=' d-cursor'
+        elif sel is not None and sel==i: extra=' d-sel'
+        cells[r][c]=(ch,cls+extra)
+    lines=[]
+    for r in range(MAP_H):
+        line=''
+        for c in range(MAP_W):
+            ch,cls=cells[r][c]
+            line+=f'<span class="{cls}">{ch}</span>'
+        lines.append(line)
+    document.getElementById('ga').innerHTML='\n'.join(lines)
+
+def render_status():
+    document.getElementById('s-year').textContent=year_str()
+    document.getElementById('s-season').textContent=season_str()
+    for i,d in enumerate(DAIMYO):
+        owned=[k for k in st['kuni'] if k['owner']==i]
+        total_k=sum(k['koku'] for k in owned)
+        total_s=sum(k['soldiers'] for k in owned)
+        document.getElementById(f's-p{i}').textContent=f"{len(owned)}国 兵{total_s}"
+    ki=st['sel']
+    if ki is not None:
+        k=st['kuni'][ki]
+        owner_name=DAIMYO[k['owner']]['name'] if k['owner']>=0 else '中立'
+        document.getElementById('detail').textContent=(
+            f"【{k['name']}】 領主:{owner_name}  石高:{k['koku']}石  兵力:{k['soldiers']}人"
+        )
+    document.getElementById('msg').textContent=st['msg']
+
+def render():
+    render_map();render_status()
+
+def do_naisei():
+    ki=st['sel']
+    if ki is None: st['msg']='国を選択してください';render();return
+    k=st['kuni'][ki]
+    if k['owner']!=st['player']: st['msg']='自国のみ内政できます';render();return
+    k['koku']+=50;st['msg']=f"{k['name']}の農業を発展 (+50石)"
+    render()
+
+def do_shogun():
+    ki=st['sel']
+    if ki is None: st['msg']='国を選択してください';render();return
+    k=st['kuni'][ki]
+    if k['owner']!=st['player']: st['msg']='自国のみ徴兵できます';render();return
+    cost=k['koku']//10
+    add=cost//5
+    k['soldiers']+=add;st['msg']=f"{k['name']}で徴兵 (+{add}人)"
+    render()
+
+def do_gaiko():
+    ki=st['sel']
+    if ki is None: st['msg']='交渉相手の国を選択してください';render();return
+    k=st['kuni'][ki]
+    if k['owner']==st['player']: st['msg']='他国を選んでください';render();return
+    if k['owner']==-1:
+        # 中立国を懐柔
+        if random.random()<0.4:
+            k['owner']=st['player']
+            st['msg']=f"{k['name']}が傘下に入った！"
+        else:
+            st['msg']=f"{k['name']}との交渉は失敗した"
+    else:
+        # 同盟
+        owner=k['owner']
+        if owner not in st['kuni'][ki].get('allied',[]):
+            st['kuni'][ki].setdefault('allied',[]).append(st['player'])
+            st['msg']=f"{DAIMYO[owner]['name']}と同盟を締結"
+        else:
+            st['msg']='既に同盟関係です'
+    render()
+
+def do_attack():
+    ki=st['sel']
+    if ki is None: st['msg']='攻撃対象の国を選択してください';render();return
+    k=st['kuni'][ki]
+    if k['owner']==st['player']: st['msg']='自国は攻撃できません';render();return
+    # 攻撃側の兵力
+    my_kuni=[kk for kk in st['kuni'] if kk['owner']==st['player']]
+    if not my_kuni: st['msg']='自国がありません';render();return
+    att_soldiers=sum(kk['soldiers'] for kk in my_kuni)
+    def_soldiers=k['soldiers']
+    # 戦闘計算
+    att_power=att_soldiers*(0.8+random.random()*0.4)
+    def_power=def_soldiers*(0.8+random.random()*0.4)
+    if att_power>def_power:
+        prev_owner=k['owner']
+        k['owner']=st['player']
+        k['soldiers']=max(10,int(att_soldiers*0.6))
+        for kk in my_kuni: kk['soldiers']=max(10,int(kk['soldiers']*0.7))
+        prev=DAIMYO[prev_owner]['name'] if prev_owner>=0 else '中立'
+        st['msg']=f"勝利！{k['name']}を{prev}から奪取！"
+        check_victory()
+    else:
+        for kk in my_kuni: kk['soldiers']=max(10,int(kk['soldiers']*0.5))
+        k['soldiers']=max(10,int(k['soldiers']*0.8))
+        st['msg']=f"敗北... {k['name']}の攻略に失敗した"
+    render()
+
+def check_victory():
+    my_kuni=[k for k in st['kuni'] if k['owner']==st['player']]
+    if len(my_kuni)==len(st['kuni']):
+        st['msg']='*** 天下統一！おめでとうございます！***'
+        st['game_over']=True
+
+def enemy_actions():
+    for i,d in enumerate(DAIMYO):
+        if i==st['player']: continue
+        my=[k for k in st['kuni'] if k['owner']==i]
+        if not my: continue
+        # ランダムに内政か攻撃
+        if random.random()<0.5:
+            k=random.choice(my);k['koku']+=20;k['soldiers']+=10
+        else:
+            targets=[k for k in st['kuni'] if k['owner']!=i]
+            if targets:
+                target=random.choice(targets)
+                att=sum(k['soldiers'] for k in my)
+                if att>target['soldiers']*0.8 and random.random()<0.3:
+                    target['owner']=i
+                    target['soldiers']=max(10,int(att*0.5))
+
+def next_turn():
+    if st['game_over']: return
+    enemy_actions()
+    # 収入
+    for k in st['kuni']:
+        if k['owner']>=0:
+            k['soldiers']=min(k['soldiers']+k['koku']//20, k['koku']//2)
+    st['turn']+=1
+    st['msg']=f"{year_str()} {season_str()} ― 季節が変わった"
+    render()
+
+def on_key(e):
+    if st['game_over']: return
+    k=e.key
+    if   k=='ArrowUp':    st['cy']=max(0,st['cy']-1)
+    elif k=='ArrowDown':  st['cy']=min(MAP_H-1,st['cy']+1)
+    elif k=='ArrowLeft':  st['cx']=max(0,st['cx']-1)
+    elif k=='ArrowRight': st['cx']=min(MAP_W-1,st['cx']+1)
+    elif k=='Enter':
+        ki=nearest_kuni(st['cy'],st['cx'])
+        st['sel']=ki
+    elif k=='n' or k=='N': next_turn(); return
+    e.preventDefault()
+    render()
+
+document.addEventListener('keydown',create_proxy(on_key))
+document.getElementById('c-naisei').addEventListener('click',create_proxy(lambda e:do_naisei()))
+document.getElementById('c-shogun').addEventListener('click',create_proxy(lambda e:do_shogun()))
+document.getElementById('c-gaiko').addEventListener('click',  create_proxy(lambda e:do_gaiko()))
+document.getElementById('c-attack').addEventListener('click', create_proxy(lambda e:do_attack()))
+document.getElementById('c-next').addEventListener('click',   create_proxy(lambda e:next_turn()))
+
+render()
+</script>
 </body>
 </html>
