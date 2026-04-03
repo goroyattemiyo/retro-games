@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>シムシティ - SIMCITY</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
+  <style>
+    :root{--green:#00ff41;--green-dim:#00aa2a;--green-dark:#003f0f;--green-faint:#001a06;--amber:#ffb300;--cyan:#00e5ff;--red:#ff3b3b;--bg:#000d02;--sl:rgba(0,255,65,.03);}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
+    body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
+
+    #terminal{width:min(1100px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(0,255,65,.2);background:var(--bg);}
+    #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
+    #tb a{color:var(--green-dim);text-decoration:none;} #tb a:hover{color:var(--green);}
+    .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+    #screen{padding:16px;}
+    #hd{text-align:center;margin-bottom:12px;border-bottom:1px solid var(--green-dark);padding-bottom:10px;}
+    #hd h1{font-family:'DotGothic16',monospace;font-size:26px;text-shadow:0 0 10px var(--cyan);letter-spacing:8px;color:var(--cyan);}
+    #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
+
+    /* マップエリア */
+    #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:12px;text-align:center;margin-bottom:10px;}
+    #ga{font-family:'Share Tech Mono',monospace;font-size:clamp(20px,3.5vw,32px);line-height:1.4;letter-spacing:0.05em;white-space:pre;display:inline-block;cursor:default;}
+    #ga span{display:inline;}
+
+    /* セルカラー */
+    .c-empty  {color:#002208;}
+    .c-road   {color:#888;}
+    .c-res    {color:#00ff41;text-shadow:0 0 4px #00ff41;}
+    .c-com    {color:#ffb300;text-shadow:0 0 4px #ffb300;}
+    .c-ind    {color:#00e5ff;text-shadow:0 0 4px #00e5ff;}
+    .c-cursor {background:rgba(255,255,255,0.15);outline:1px solid #fff;}
+
+    /* ステータスバー */
+    #statusbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+    .stat-block{display:flex;align-items:center;gap:6px;border:1px solid var(--green-dark);background:var(--green-faint);padding:4px 10px;}
+    .stat-label{font-size:10px;color:var(--green-dark);letter-spacing:2px;white-space:nowrap;}
+    .stat-value{font-size:15px;color:var(--green);}
+    .stat-value.amber{color:var(--amber);}
+    .stat-value.cyan{color:var(--cyan);}
+    .stat-value.red{color:var(--red);}
+
+    /* ゾーン選択 */
+    #toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+    .tool-label{font-size:10px;color:var(--green-dark);letter-spacing:2px;margin-right:4px;}
+    .tbtn{background:var(--green-dark);border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:12px;padding:4px 10px;cursor:pointer;letter-spacing:1px;transition:all .1s;}
+    .tbtn:hover{background:var(--green-dim);color:var(--bg);}
+    .tbtn.active{background:var(--green);color:var(--bg);box-shadow:0 0 8px var(--green);}
+    .tbtn.road.active{background:#888;color:#000;box-shadow:0 0 8px #888;}
+    .tbtn.res.active{background:var(--green);color:#000;box-shadow:0 0 8px var(--green);}
+    .tbtn.com.active{background:var(--amber);color:#000;box-shadow:0 0 8px var(--amber);}
+    .tbtn.ind.active{background:var(--cyan);color:#000;box-shadow:0 0 8px var(--cyan);}
+    .tbtn.bulldoze.active{background:var(--red);color:#000;box-shadow:0 0 8px var(--red);}
+
+    .nbtn{background:var(--green-dark);border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:12px;padding:4px 12px;cursor:pointer;letter-spacing:1px;transition:all .1s;margin-left:auto;}
+    .nbtn:hover{background:var(--green-dim);color:var(--bg);}
+
+    /* 操作ガイド */
+    #ctrl{border-top:1px solid var(--green-dark);padding-top:8px;font-size:13px;color:var(--green-dim);display:flex;justify-content:center;gap:20px;flex-wrap:wrap;}
+    #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:2px 6px;color:var(--green);font-family:inherit;font-size:13px;}
+
+    /* 凡例 */
+    #legend{margin-top:8px;font-size:11px;color:var(--green-dim);line-height:1.8;border:1px solid var(--green-dark);padding:6px 12px;background:var(--green-faint);}
+
+    /* メッセージ */
+    #msg{text-align:center;font-size:12px;color:var(--amber);min-height:18px;margin-bottom:6px;letter-spacing:1px;}
+  </style>
+</head>
+<body>
+<div id="terminal">
+  <div id="tb">
+    <span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; SIMCITY.EXE ver 1.00</span>
+    <span class="blink">■</span>
+    <span>PC-9801</span>
+  </div>
+  <div id="screen">
+    <div id="hd">
+      <h1>シムシティ</h1>
+      <div class="sub">SIMCITY &mdash; MINI CITY BUILDER</div>
+    </div>
+
+    <div id="map-wrap">
+      <div id="ga">LOADING...</div>
+    </div>
+
+    <div id="msg"></div>
+
+    <div id="toolbar">
+      <span class="tool-label">ZONE:</span>
+      <button class="tbtn res active"  id="t-res">R 住宅</button>
+      <button class="tbtn com"         id="t-com">C 商業</button>
+      <button class="tbtn ind"         id="t-ind">I 工業</button>
+      <button class="tbtn road"        id="t-road">. 道路</button>
+      <button class="tbtn bulldoze"    id="t-bull">X 撤去</button>
+      <button class="nbtn"             id="t-next">▶ NEXT TURN</button>
+    </div>
+
+    <div id="statusbar">
+      <div class="stat-block"><div class="stat-label">YEAR</div><div class="stat-value" id="s-year">1</div></div>
+      <div class="stat-block"><div class="stat-label">POP</div><div class="stat-value cyan" id="s-pop">0</div></div>
+      <div class="stat-block"><div class="stat-label">FUNDS</div><div class="stat-value amber" id="s-funds">10000</div></div>
+      <div class="stat-block"><div class="stat-label">TAX</div><div class="stat-value amber" id="s-tax">0</div></div>
+      <div class="stat-block"><div class="stat-label">HAPPY</div><div class="stat-value" id="s-happy">--</div></div>
+    </div>
+
+    <div id="ctrl">
+      <span><kbd>↑↓←→</kbd> カーソル移動</span>
+      <span><kbd>SPACE</kbd> 配置</span>
+      <span><kbd>1</kbd>住宅 <kbd>2</kbd>商業 <kbd>3</kbd>工業 <kbd>4</kbd>道路 <kbd>5</kbd>撤去</span>
+      <span><kbd>ENTER</kbd> ターン進める</span>
+    </div>
+
+    <div id="legend">
+      <span style="color:var(--green);">R </span>住宅(100円) &nbsp;
+      <span style="color:var(--amber);">C </span>商業(150円) &nbsp;
+      <span style="color:var(--cyan);">I </span>工業(200円) &nbsp;
+      <span style="color:#888;">. </span>道路(50円) &nbsp;
+      道路に隣接すると人口・収益UP。満足度が下がると人口減。
+    </div>
+  </div>
+</div>
+
+<script type="py">
+from pyscript import document
+from pyodide.ffi import create_proxy
+
+# === 定数 ===
+W, H = 20, 12
+EMPTY = ' '
+ROAD  = '.'
+RES   = 'R'
+COM   = 'C'
+IND   = 'I'
+
+COST  = {RES:100, COM:150, IND:200, ROAD:50}
+COLORS= {EMPTY:'c-empty', ROAD:'c-road', RES:'c-res', COM:'c-com', IND:'c-ind'}
+CHARS = {EMPTY:'·', ROAD:'.', RES:'R', COM:'C', IND:'I'}
+
+# === 状態 ===
+st = {
+    'grid':  [[EMPTY]*W for _ in range(H)],
+    'cx': W//2, 'cy': H//2,
+    'tool': RES,
+    'funds': 10000,
+    'pop': 0,
+    'year': 1,
+    'happy': 100,
+    'tax': 0,
+    'msg': '',
+}
+
+def has_road_neighbor(r, c):
+    for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+        nr, nc = r+dr, c+dc
+        if 0<=nr<H and 0<=nc<W and st['grid'][nr][nc]==ROAD:
+            return True
+    return False
+
+def simulate():
+    g = st['grid']
+    pop = 0; tax = 0
+    res_count = sum(g[r][c]==RES for r in range(H) for c in range(W))
+    com_count = sum(g[r][c]==COM for r in range(H) for c in range(W))
+    ind_count = sum(g[r][c]==IND for r in range(H) for c in range(W))
+    road_count= sum(g[r][c]==ROAD for r in range(H) for c in range(W))
+
+    for r in range(H):
+        for c in range(W):
+            cell = g[r][c]
+            if cell == RES:
+                base = 4
+                if has_road_neighbor(r,c): base += 4
+                # 商業が近いと+2
+                for dr in range(-2,3):
+                    for dc in range(-2,3):
+                        nr,nc=r+dr,c+dc
+                        if 0<=nr<H and 0<=nc<W and g[nr][nc]==COM: base+=1; break
+                pop += base
+                tax += base * 10
+            elif cell == COM:
+                base = 2
+                if has_road_neighbor(r,c): base += 3
+                tax += base * 20
+            elif cell == IND:
+                base = 1
+                if has_road_neighbor(r,c): base += 2
+                tax += base * 30
+
+    # 満足度計算
+    happy = 100
+    if ind_count > 0 and res_count > 0:
+        ratio = ind_count / max(res_count, 1)
+        happy -= int(ratio * 20)
+    if road_count == 0 and (res_count+com_count+ind_count) > 2:
+        happy -= 20
+    happy = max(10, min(100, happy))
+
+    # 人口は満足度で補正
+    pop = int(pop * happy / 100)
+
+    st['pop']   = pop
+    st['tax']   = tax
+    st['happy'] = happy
+    st['funds'] += tax
+    st['year']  += 1
+
+    if happy >= 80:   msg = f"市民は満足しています！ (+{tax}円)"
+    elif happy >= 50: msg = f"まあまあです。 (+{tax}円)"
+    else:             msg = f"市民の不満が高まっています！ (+{tax}円)"
+    st['msg'] = msg
+
+def place():
+    r, c = st['cy'], st['cx']
+    tool = st['tool']
+    g = st['grid']
+    if tool == EMPTY:
+        g[r][c] = EMPTY
+        st['msg'] = "撤去しました"
+    else:
+        cost = COST.get(tool, 0)
+        if st['funds'] < cost:
+            st['msg'] = f"資金不足！ (必要: {cost}円)"
+            render(); return
+        if g[r][c] != EMPTY:
+            st['msg'] = "既に建設済みです"
+            render(); return
+        g[r][c] = tool
+        st['funds'] -= cost
+        st['msg'] = f"{tool} を配置 (-{cost}円)"
+    render()
+
+def render():
+    g = st['grid']
+    cx, cy = st['cx'], st['cy']
+    lines = []
+    for r in range(H):
+        line = ''
+        for c in range(W):
+            cell = g[r][c]
+            ch   = CHARS.get(cell, cell)
+            cls  = COLORS.get(cell, 'c-empty')
+            if r==cy and c==cx:
+                line += f'<span class="{cls} c-cursor">{ch}</span>'
+            else:
+                line += f'<span class="{cls}">{ch}</span>'
+        lines.append(line)
+    document.getElementById('ga').innerHTML = '\n'.join(lines)
+
+    document.getElementById('s-year').textContent  = str(st['year'])
+    document.getElementById('s-pop').textContent   = str(st['pop'])
+    document.getElementById('s-funds').textContent = str(st['funds'])
+    document.getElementById('s-tax').textContent   = f"+{st['tax']}"
+    h = st['happy']
+    hel = document.getElementById('s-happy')
+    hel.textContent = f"{h}%"
+    hel.className = 'stat-value' + (' cyan' if h>=80 else ' amber' if h>=50 else ' red')
+    document.getElementById('msg').textContent = st['msg']
+
+def set_tool(t):
+    st['tool'] = t
+    for tid, tv in [('t-res',RES),('t-com',COM),('t-ind',IND),('t-road',ROAD),('t-bull',EMPTY)]:
+        el = document.getElementById(tid)
+        base = tid.split('-')[1]
+        el.className = f'tbtn {base}' + (' active' if tv==t else '')
+
+def on_key(e):
+    k = e.key
+    if   k=='ArrowUp':    st['cy'] = max(0, st['cy']-1)
+    elif k=='ArrowDown':  st['cy'] = min(H-1, st['cy']+1)
+    elif k=='ArrowLeft':  st['cx'] = max(0, st['cx']-1)
+    elif k=='ArrowRight': st['cx'] = min(W-1, st['cx']+1)
+    elif k==' ':          place(); return
+    elif k=='Enter':      simulate(); render(); return
+    elif k=='1': set_tool(RES)
+    elif k=='2': set_tool(COM)
+    elif k=='3': set_tool(IND)
+    elif k=='4': set_tool(ROAD)
+    elif k=='5': set_tool(EMPTY)
+    e.preventDefault()
+    render()
+
+def on_tr(e): set_tool(RES);   render()
+def on_tc(e): set_tool(COM);   render()
+def on_ti(e): set_tool(IND);   render()
+def on_to(e): set_tool(ROAD);  render()
+def on_tb(e): set_tool(EMPTY); render()
+def on_tn(e): simulate(); render()
+
+# マップクリック
+def on_map_click(e):
+    ga = document.getElementById('ga')
+    rect = ga.getBoundingClientRect()
+    # セルサイズを推定
+    spans = ga.querySelectorAll('span')
+    if spans.length == 0: return
+    first = spans[0].getBoundingClientRect()
+    cw = first.width if first.width > 0 else 16
+    ch_h = first.height if first.height > 0 else 22
+    x = e.clientX - rect.left
+    y = e.clientY - rect.top
+    cc = int(x // cw)
+    cr = int(y // ch_h)
+    if 0<=cr<H and 0<=cc<W:
+        st['cx'] = cc; st['cy'] = cr
+        place()
+
+document.addEventListener('keydown', create_proxy(on_key))
+document.getElementById('t-res').addEventListener('click',  create_proxy(on_tr))
+document.getElementById('t-com').addEventListener('click',  create_proxy(on_tc))
+document.getElementById('t-ind').addEventListener('click',  create_proxy(on_ti))
+document.getElementById('t-road').addEventListener('click', create_proxy(on_to))
+document.getElementById('t-bull').addEventListener('click', create_proxy(on_tb))
+document.getElementById('t-next').addEventListener('click', create_proxy(on_tn))
+document.getElementById('ga').addEventListener('click',     create_proxy(on_map_click))
+
+render()
+</script>
+</body>
+</html>
