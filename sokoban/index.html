@@ -167,7 +167,7 @@ S=[
   {"name":"STAGE 5","map":["#########","# . # . #","# $   $ #","#   @   #","# $   $ #","# . # . #","#########"]},
 ]
 W='#';F=' ';B='$';G='.';D='*';P='@';PG='+'
-DI={W:('▓','cell-wall'),F:('·','cell-floor'),B:('□','cell-box'),G:('×','cell-goal'),D:('■','cell-done'),P:('☺','cell-player'),PG:('☺','cell-player-goal')}
+DI={W:('#','cell-wall'),F:('.','cell-floor'),B:('$','cell-box'),G:('x','cell-goal'),D:('*','cell-done'),P:('@','cell-player'),PG:('+','cell-player-goal')}
 st={'i':0,'g':[],'p':(0,0),'m':0,'c':False}
 
 def ps(i):
