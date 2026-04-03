@@ -28,19 +28,19 @@
     #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
 
     /* メインレイアウト: マップ左 + パネル右 */
-    #main{display:flex;gap:16px;align-items:flex-start;}
+    #main{display:flex;flex-direction:column;gap:10px;align-items:center;}
 
     /* マップエリア - 固定幅で文字がずれない */
     #map-wrap{
-      flex:0 0 auto;
+      width:100%;
       background:#000;
       border:1px solid var(--green-dark);
       padding:12px;
-      min-width:260px;
+      text-align:center;
     }
     #ga{
       font-family:'Share Tech Mono',monospace;
-      font-size:clamp(18px,2.8vw,28px);
+      font-size:clamp(20px,3.5vw,32px);
       line-height:1.4;
       letter-spacing:0.05em;
       white-space:pre;  /* 絶対に折り返さない */
@@ -65,18 +65,19 @@
     }
 
     .panel-block{
+      flex:1 1 80px;
       border:1px solid var(--green-dark);
       background:var(--green-faint);
-      padding:8px 10px;
+      padding:6px 10px;
     }
     .panel-label{font-size:10px;color:var(--green-dark);letter-spacing:2px;margin-bottom:4px;}
     .panel-value{font-size:22px;color:var(--green);text-shadow:0 0 6px rgba(0,255,65,.3);}
     .panel-value.small{font-size:14px;}
 
-    #stage-name{font-size:11px;color:var(--amber);letter-spacing:2px;text-align:center;min-height:16px;}
+    #stage-name{display:none;}
 
     /* ボタン群 */
-    .btn-row{display:flex;gap:6px;flex-wrap:wrap;}
+    .btn-row{display:flex;gap:6px;flex-wrap:wrap;flex:2 1 180px;align-self:flex-end;}
     .sbtn{
       flex:1;
       background:var(--green-dark);border:1px solid var(--green-dim);
