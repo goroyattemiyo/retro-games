@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>倉庫番 - SOKOBAN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+  <style>
+    :root{--green:#00ff41;--green-dim:#00aa2a;--green-dark:#003f0f;--green-faint:#001a06;--amber:#ffb300;--bg:#000d02;--sl:rgba(0,255,65,.03);}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
+    body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
+    #terminal{width:min(700px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(0,255,65,.2);background:var(--bg);}
+    #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
+    #tb a{color:var(--green-dim);text-decoration:none;} #tb a:hover{color:var(--green);}
+    .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+    #screen{padding:20px;}
+    #hd{text-align:center;margin-bottom:16px;border-bottom:1px solid var(--green-dark);padding-bottom:12px;}
+    #hd h1{font-family:'DotGothic16',monospace;font-size:28px;text-shadow:0 0 10px var(--green);letter-spacing:8px;}
+    #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:4px;}
+    #ib{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px;font-size:12px;color:var(--green-dim);border:1px solid var(--green-dark);padding:4px 10px;background:var(--green-faint);}
+    #ib span{color:var(--green);}
+    #ga{font-family:'Share Tech Mono',monospace;font-size:clamp(16px,3.5vw,22px);line-height:1.4;text-align:center;letter-spacing:.1em;min-height:200px;display:flex;align-items:center;justify-content:center;}
+    #ga pre{display:inline-block;text-align:left;}
+    .cell-wall{color:var(--green-dim);}.cell-floor{color:var(--green-dark);}
+    .cell-box{color:var(--amber);text-shadow:0 0 6px var(--amber);}
+    .cell-goal{color:#ff6b6b;}.cell-done{color:#00ffff;text-shadow:0 0 6px #00ffff;}
+    .cell-player{color:var(--green);text-shadow:0 0 8px var(--green);}
+    .cell-player-goal{color:#ff6b6b;text-shadow:0 0 8px #ff6b6b;}
+    #msg{text-align:center;margin-top:14px;font-size:13px;min-height:20px;color:var(--amber);letter-spacing:2px;}
+    #ctrl{margin-top:14px;border-top:1px solid var(--green-dark);padding-top:10px;font-size:11px;color:var(--green-dim);display:flex;justify-content:center;gap:20px;flex-wrap:wrap;}
+    #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:1px 5px;color:var(--green);font-family:inherit;}
+    .sbtn{background:var(--green-dark);border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:12px;padding:3px 10px;cursor:pointer;letter-spacing:1px;transition:all .1s;}
+    .sbtn:hover{background:var(--green-dim);color:var(--bg);}
+    #cs{text-align:center;padding:40px 20px;}
+    #cs .big{font-family:'DotGothic16',monospace;font-size:22px;color:#00ffff;text-shadow:0 0 12px #00ffff;animation:pulse 1s ease-in-out infinite;letter-spacing:4px;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+    #cs p{margin-top:12px;color:var(--green-dim);font-size:12px;}
+    #ld{text-align:center;padding:60px;color:var(--green-dim);font-size:13px;letter-spacing:3px;}
+  </style>
+</head>
+<body>
+<div id="terminal">
+  <div id="tb">
+    <span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; SOKOBAN.EXE ver 1.00</span>
+    <span class="blink">■</span>
+    <span>PC-9801</span>
+  </div>
+  <div id="screen">
+    <div id="hd"><h1>倉庫番</h1><div class="sub">SOKOBAN &mdash; WAREHOUSE KEEPER</div></div>
+    <div id="ib">
+      <div>STAGE: <span id="sn">1</span></div>
+      <div>MOVES: <span id="mc">0</span></div>
+      <div>BOXES: <span id="bc">0/0</span></div>
+      <div>
+        <button class="sbtn" id="bp">◀ PREV</button>
+        <button class="sbtn" id="br">RESET</button>
+        <button class="sbtn" id="bn">NEXT ▶</button>
+      </div>
+    </div>
+    <div id="ga"><div id="ld">LOADING</div></div>
+    <div id="msg"></div>
+    <div id="ctrl">
+      <span><kbd>↑↓←→</kbd> 移動</span>
+      <span><kbd>R</kbd> やり直し</span>
+      <span><kbd>N</kbd> 次</span>
+      <span><kbd>P</kbd> 前</span>
+    </div>
+  </div>
+</div>
+<script type="py">
+from pyscript import document
+S=[
+  {"name":"STAGE 1","map":["########","#  . # #","# $@.  #","#   $  #","##.#####","#      #","# $  . #","########"]},
+  {"name":"STAGE 2","map":["  #####","  #   #","  #$  #","###  $##","#  $ . #","# . #. #","#   @  #","########"]},
+  {"name":"STAGE 3","map":["########","#      #","# .$@$.#","#  ...  #","# .$.$. #","#      #","########"]},
+  {"name":"STAGE 4","map":["   ##### ","   #   # ","   # $@# "," ### $## "," #.$ .#  "," # . ##  "," #.  #   "," ######  "]},
+  {"name":"STAGE 5","map":["#########","# . # . #","# $   $ #","#   @   #","# $   $ #","# . # . #","#########"]},
+]
+W='#';F=' ';B='$';G='.';D='*';P='@';PG='+'
+DI={W:('▓','cell-wall'),F:('·','cell-floor'),B:('□','cell-box'),G:('×','cell-goal'),D:('■','cell-done'),P:('☺','cell-player'),PG:('☺','cell-player-goal')}
+st={'i':0,'g':[],'p':(0,0),'m':0,'c':False}
+def ps(i):
+  r=[list(x) for x in S[i]['map']];p=(0,0)
+  for y,row in enumerate(r):
+    for x,c in enumerate(row):
+      if c in(P,PG):p=(y,x)
+  return r,p
+def ls(i):
+  st['i']=i;st['g'],st['p']=ps(i);st['m']=0;st['c']=False;rd()
+def cb(g):
+  pl=sum(row.count(D) for row in g);tot=pl+sum(row.count(B) for row in g);return pl,tot
+def ic(g): return not any(B in row for row in g)
+def mv(dr,dc):
+  if st['c']:return
+  r,c=st['p'];nr,nc=r+dr,c+dc;g=st['g']
+  if nr<0 or nr>=len(g) or nc<0 or nc>=len(g[nr]):return
+  t=g[nr][nc]
+  if t==W:return
+  if t in(B,D):
+    br,bc=nr+dr,nc+dc
+    if br<0 or br>=len(g) or bc<0 or bc>=len(g[br]):return
+    bv=g[br][bc]
+    if bv in(W,B,D):return
+    g[nr][nc]=G if t==D else F;g[br][bc]=D if bv==G else B
+  cur=g[r][c];g[r][c]=G if cur==PG else F
+  g[nr][nc]=PG if g[nr][nc]==G else P
+  st['p']=(nr,nc);st['m']+=1
+  if ic(g):st['c']=True
+  rd()
+def rd():
+  g=st['g'];pl,tot=cb(g)
+  document.getElementById('sn').textContent=str(st['i']+1)
+  document.getElementById('mc').textContent=str(st['m'])
+  document.getElementById('bc').textContent=f"{pl}/{tot}"
+  ga=document.getElementById('ga');mg=document.getElementById('msg')
+  if st['c']:
+    ga.innerHTML='<div id="cs"><div class="big">*** STAGE CLEAR! ***</div><p>MOVES: '+str(st['m'])+' | PRESS N FOR NEXT</p></div>';mg.textContent='';return
+  h='<pre>'
+  for row in g:
+    for ch in row:
+      if ch==' ':ch=F
+      s,cl=DI.get(ch,(ch,'cell-floor'));h+=f'<span class="{cl}">{s}</span>'
+    h+='\n'
+  h+='</pre>';ga.innerHTML=h;mg.textContent=S[st['i']]['name']
+def ok(e):
+  k=e.key
+  if k=='ArrowUp' or k=='w':mv(-1,0)
+  elif k=='ArrowDown' or k=='s':mv(1,0)
+  elif k=='ArrowLeft' or k=='a':mv(0,-1)
+  elif k=='ArrowRight' or k=='d':mv(0,1)
+  elif k in('r','R'):ls(st['i'])
+  elif k in('n','N'):
+    if st['i']<len(S)-1:ls(st['i']+1)
+  elif k in('p','P'):
+    if st['i']>0:ls(st['i']-1)
+  e.preventDefault()
+document.addEventListener('keydown',ok)
+def on_r(e):ls(st['i'])
+def on_n(e):
+  if st['i']<len(S)-1:ls(st['i']+1)
+def on_p(e):
+  if st['i']>0:ls(st['i']-1)
+document.getElementById('br').addEventListener('click',on_r)
+document.getElementById('bn').addEventListener('click',on_n)
+document.getElementById('bp').addEventListener('click',on_p)
+ls(0)
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>ザナドゥ - RETRO GAME CENTER</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <style>
+    :root{--c:#ff80ab;--bg:#000d02;--gd:#003f0f;--gm:#00aa2a;--sl:rgba(0,255,65,.025);}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--c);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
+    body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
+    #box{width:min(560px,95vw);border:2px solid var(--gm);background:#000;}
+    #tb{background:var(--gd);border-bottom:1px solid var(--gm);padding:4px 12px;display:flex;justify-content:space-between;font-size:11px;color:var(--gm);letter-spacing:2px;}
+    #tb a{color:var(--gm);text-decoration:none;} #tb a:hover{color:#00ff41;}
+    #bd{padding:40px 30px;text-align:center;}
+    h1{font-family:'DotGothic16',monospace;font-size:clamp(24px,6vw,40px);color:var(--c);text-shadow:0 0 12px var(--c);letter-spacing:6px;margin-bottom:8px;}
+    .ge{font-size:11px;color:var(--gm);letter-spacing:4px;margin-bottom:32px;}
+    .wip{border:1px solid var(--c);padding:16px 32px;display:inline-block;margin-bottom:32px;opacity:.6;}
+    .wip span{font-size:18px;color:var(--c);letter-spacing:4px;}
+    .msg{font-size:12px;color:var(--gm);line-height:1.9;}
+    a.back{display:inline-block;margin-top:24px;color:var(--gm);font-size:12px;text-decoration:none;border:1px solid var(--gd);padding:6px 16px;letter-spacing:2px;}
+    a.back:hover{color:#00ff41;border-color:var(--gm);}
+    .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+  </style>
+</head>
+<body>
+<div id="box">
+  <div id="tb"><span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; XANADU.EXE</span><span class="blink">■</span><span>PC-9801</span></div>
+  <div id="bd">
+    <h1>ザナドゥ</h1>
+    <div class="ge">ACTION RPG / FALCOM</div>
+    <div class="wip"><span>-- UNDER CONSTRUCTION --</span></div>
+    <div class="msg">このゲームは現在開発中です。<br>しばらくお待ちください。<br><br><span class="blink">█</span></div>
+    <a class="back" href="../index.html">◀ MENU に戻る</a>
+  </div>
+</div>
+</body>
+</html>
