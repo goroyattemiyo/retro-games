@@ -160,14 +160,6 @@ def has_road_neighbor(r, c):
             return True
     return False
 
-def near_count(g,r,c,zone,dist=2):
-    n=0
-    for dr in range(-dist,dist+1):
-        for dc in range(-dist,dist+1):
-            nr,nc=r+dr,c+dc
-            if 0<=nr<H and 0<=nc<W and g[nr][nc]==zone: n+=1
-    return n
-
 def simulate():
     g = st['grid']
     pop = 0; tax = 0
@@ -180,67 +172,46 @@ def simulate():
         for c in range(W):
             cell = g[r][c]
             if cell == RES:
-                # 道路必須・商業か工業が近くに職場として必要
-                if not has_road_neighbor(r,c): continue
-                jobs = near_count(g,r,c,COM)+near_count(g,r,c,IND)
-                if jobs == 0: continue  # 職場ゼロは人口増えない
-                base = 2 + min(jobs, 4)
-                # 工業が近すぎると減少
-                ind_near = near_count(g,r,c,IND,1)
-                base -= ind_near * 2
-                base = max(0, base)
+                base = 4
+                if has_road_neighbor(r,c): base += 4
+                # 商業が近いと+2
+                for dr in range(-2,3):
+                    for dc in range(-2,3):
+                        nr,nc=r+dr,c+dc
+                        if 0<=nr<H and 0<=nc<W and g[nr][nc]==COM: base+=1; break
                 pop += base
-                tax += base * 8
+                tax += base * 10
             elif cell == COM:
-                # 道路必須・近くに住宅（客）が必要
-                if not has_road_neighbor(r,c): continue
-                customers = near_count(g,r,c,RES)
-                if customers == 0: continue  # 客ゼロは売上なし
-                income = min(customers, 5) * 15
-                tax += income
+                base = 2
+                if has_road_neighbor(r,c): base += 3
+                tax += base * 20
             elif cell == IND:
-                # 道路必須
-                if not has_road_neighbor(r,c): continue
-                workers = near_count(g,r,c,RES)
-                if workers == 0: continue  # 労働者ゼロは稼働しない
-                income = min(workers, 4) * 20
-                tax += income
+                base = 1
+                if has_road_neighbor(r,c): base += 2
+                tax += base * 30
 
     # 満足度計算
     happy = 100
-    # 工業過多ペナルティ
-    if res_count > 0:
-        ind_ratio = ind_count / max(res_count,1)
-        if ind_ratio > 0.5: happy -= int((ind_ratio-0.5)*60)
-    # 道路不足ペナルティ
-    total_zones = res_count+com_count+ind_count
-    if total_zones > 3 and road_count == 0: happy -= 30
-    elif total_zones > 0 and road_count/max(total_zones,1) < 0.3: happy -= 15
-    # バランスボーナス
-    if res_count>0 and com_count>0 and ind_count>0: happy += 10
+    if ind_count > 0 and res_count > 0:
+        ratio = ind_count / max(res_count, 1)
+        happy -= int(ratio * 20)
+    if road_count == 0 and (res_count+com_count+ind_count) > 2:
+        happy -= 20
     happy = max(10, min(100, happy))
 
-    # 人口は満足度で補正・前ターンより急増しない
+    # 人口は満足度で補正
     pop = int(pop * happy / 100)
-    prev_pop = st['pop']
-    pop = min(pop, prev_pop + max(10, prev_pop//5))  # 最大20%増
 
-    # 維持費（道路・ゾーンのメンテ）
-    upkeep = road_count*5 + (res_count+com_count+ind_count)*3
-
-    net = tax - upkeep
     st['pop']   = pop
-    st['tax']   = net
+    st['tax']   = tax
     st['happy'] = happy
-    st['funds'] += net
+    st['funds'] += tax
     st['year']  += 1
 
-    # 資金マイナスは警告
-    if st['funds'] < 0:
-        st['msg'] = f"財政破綻！資金がマイナスです！ ({net:+d}円)"
-    elif happy >= 80: st['msg'] = f"市民は満足！ 税収{tax}円 維持費{upkeep}円 ({net:+d}円)"
-    elif happy >= 50: st['msg'] = f"まあまあです。 税収{tax}円 維持費{upkeep}円 ({net:+d}円)"
-    else:             st['msg'] = f"不満が高まっています！ 税収{tax}円 維持費{upkeep}円 ({net:+d}円)" 
+    if happy >= 80:   msg = f"市民は満足しています！ (+{tax}円)"
+    elif happy >= 50: msg = f"まあまあです。 (+{tax}円)"
+    else:             msg = f"市民の不満が高まっています！ (+{tax}円)"
+    st['msg'] = msg
 
 def place():
     r, c = st['cy'], st['cx']

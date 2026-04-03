@@ -161,6 +161,17 @@ from pyscript import document
 from pyodide.ffi import create_proxy
 
 S=[]
+def is_deadlock(grid,boxes,W2,H2):
+    # 角デッドロック判定
+    for br,bc in boxes:
+        if grid[br][bc]!='$': continue
+        wall_u=br==0 or grid[br-1][bc]=='#'
+        wall_d=br==H2-1 or grid[br+1][bc]=='#'
+        wall_l=bc==0 or grid[br][bc-1]=='#'
+        wall_r=bc==W2-1 or grid[br][bc+1]=='#'
+        if (wall_u or wall_d) and (wall_l or wall_r): return True
+    return False
+
 def gen_stage(num, seed=None):
     import random
     rng=random.Random(seed)
@@ -210,7 +221,7 @@ def gen_stage(num, seed=None):
     if not player: return None
     # 逆引き移動シミュレーション
     state=(tuple(map(tuple,boxes)),player)
-    for _ in range(30):
+    for _ in range(60):
         br,bc=boxes[rng.randint(0,len(boxes)-1)]
         dr,dc=rng.choice([(-1,0),(1,0),(0,-1),(0,1)])
         # 逆算: 箱を(dr,dc)方向に引くにはプレイヤーが箱の(dr,dc)側にいる
@@ -229,6 +240,11 @@ def gen_stage(num, seed=None):
     for i,(br,bc) in enumerate(boxes):
         if (br,bc) in goals:
             boxes[i]=(br+1,bc) if br+1<H2-1 and grid[br+1][bc]!='#' else (br,bc)
+    # デッドロックチェック
+    box_positions=[(br,bc) for br,bc in boxes]
+    test_grid=[row[:] for row in grid]
+    for br,bc in box_positions: test_grid[br][bc]='$'
+    if is_deadlock(test_grid,box_positions,W2,H2): return None
     # マップ組み立て
     result=[row[:] for row in grid]
     for gr,gc in goals: result[gr][gc]='.'
