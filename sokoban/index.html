@@ -303,8 +303,9 @@ def undo():
 
 def mv(dr,dc):
   if st['c']:return
+  if 'history' not in st: st['history']=[]
   r,c=st['p'];nr,nc=r+dr,c+dc;g=st['g']
-  st['history'].append(( [row[:] for row in g], st['p'], st['m']))
+  st['history'].append(([row[:] for row in g], st['p'], st['m']))
   if nr<0 or nr>=len(g) or nc<0 or nc>=len(g[nr]):return
   t=g[nr][nc]
   if t==W:return
