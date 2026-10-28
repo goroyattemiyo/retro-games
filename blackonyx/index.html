@@ -2,38 +2,378 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>ブラックオニキス - RETRO GAME CENTER</title>
+  <title>ブラックオニキス - BLACK ONYX</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
   <style>
-    :root{--c:#b388ff;--bg:#000d02;--gd:#003f0f;--gm:#00aa2a;--sl:rgba(0,255,65,.025);}
+    :root{--green:#00ff41;--green-dim:#00aa2a;--green-dark:#003f0f;--green-faint:#001a06;--amber:#ffb300;--cyan:#00e5ff;--red:#ff3b3b;--purple:#b388ff;--bg:#000d02;--sl:rgba(0,255,65,.03);}
     *{margin:0;padding:0;box-sizing:border-box;}
-    body{background:var(--bg);color:var(--c);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+    body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
     body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
     body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
-    #box{width:min(560px,95vw);border:2px solid var(--gm);background:#000;}
-    #tb{background:var(--gd);border-bottom:1px solid var(--gm);padding:4px 12px;display:flex;justify-content:space-between;font-size:11px;color:var(--gm);letter-spacing:2px;}
-    #tb a{color:var(--gm);text-decoration:none;} #tb a:hover{color:#00ff41;}
-    #bd{padding:40px 30px;text-align:center;}
-    h1{font-family:'DotGothic16',monospace;font-size:clamp(24px,6vw,40px);color:var(--c);text-shadow:0 0 12px var(--c);letter-spacing:6px;margin-bottom:8px;}
-    .ge{font-size:11px;color:var(--gm);letter-spacing:4px;margin-bottom:32px;}
-    .wip{border:1px solid var(--c);padding:16px 32px;display:inline-block;margin-bottom:32px;opacity:.6;}
-    .wip span{font-size:18px;color:var(--c);letter-spacing:4px;}
-    .msg{font-size:12px;color:var(--gm);line-height:1.9;}
-    a.back{display:inline-block;margin-top:24px;color:var(--gm);font-size:12px;text-decoration:none;border:1px solid var(--gd);padding:6px 16px;letter-spacing:2px;}
-    a.back:hover{color:#00ff41;border-color:var(--gm);}
+    #terminal{width:min(1100px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(179,136,255,.25);background:var(--bg);}
+    #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
+    #tb a{color:var(--green-dim);text-decoration:none;} #tb a:hover{color:var(--green);}
     .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+    #screen{padding:16px;}
+    #hd{text-align:center;margin-bottom:12px;border-bottom:1px solid var(--green-dark);padding-bottom:10px;}
+    #hd h1{font-family:'DotGothic16',monospace;font-size:26px;text-shadow:0 0 10px var(--purple);letter-spacing:6px;color:var(--purple);}
+    #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
+    #main{display:flex;flex-direction:column;gap:10px;align-items:center;}
+    #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:12px;text-align:center;}
+    #ga{display:grid;grid-template-columns:repeat(12,44px);gap:3px;justify-content:center;align-items:center;width:100%;max-width:560px;margin:0 auto;}
+    @media (max-width:620px){#ga{grid-template-columns:repeat(12,minmax(24px,7.5vw));}}
+    .tile{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,3.5vw,24px);line-height:1;border-radius:4px;user-select:none;overflow:hidden;}
+    .t-wall{background:linear-gradient(135deg,#2d2340,#171126 60%,#0d0918);box-shadow:inset 0 0 0 1px rgba(179,136,255,.35);}
+    .t-floor{background:#070d08;box-shadow:inset 0 0 0 1px rgba(0,255,65,.05);color:rgba(0,255,65,.25);}
+    .t-stairs{background:#0a2a2a;color:var(--cyan);text-shadow:0 0 8px var(--cyan);box-shadow:inset 0 0 0 1px rgba(0,229,255,.5);}
+    .t-treasure{background:#2e2405;color:var(--amber);text-shadow:0 0 8px var(--amber);box-shadow:inset 0 0 0 1px rgba(255,179,0,.5);}
+    .t-monster{background:radial-gradient(circle at 50% 40%,rgba(255,59,59,.35),#180505 75%);box-shadow:inset 0 0 0 1px rgba(255,59,59,.5);}
+    .t-boss{background:radial-gradient(circle at 50% 40%,rgba(179,136,255,.55),#12041f 75%);box-shadow:inset 0 0 0 1px rgba(179,136,255,.8),0 0 12px rgba(179,136,255,.6);}
+    .t-player{background:radial-gradient(circle at 50% 40%,rgba(0,255,65,.35),#021a06 75%);box-shadow:inset 0 0 0 1px rgba(0,255,65,.5),0 0 10px rgba(0,255,65,.45);}
+    #panel{width:100%;max-width:560px;display:flex;flex-direction:column;gap:8px;}
+    .panel-block{display:flex;align-items:center;gap:8px;border:1px solid var(--green-dark);background:var(--green-faint);padding:4px 10px;}
+    .panel-label{font-size:10px;color:var(--green-dim);letter-spacing:2px;white-space:nowrap;min-width:52px;}
+    .panel-value{font-size:15px;color:var(--green);text-shadow:0 0 6px rgba(0,255,65,.3);}
+    .bar{flex:1;height:12px;background:#021a06;border:1px solid var(--green-dark);overflow:hidden;}
+    .bar-fill{height:100%;transition:width .2s;}
+    .hp-fill{background:linear-gradient(90deg,#00aa2a,var(--green));}
+    .mp-fill{background:linear-gradient(90deg,#7b4dff,var(--purple));}
+    #msg{width:100%;max-width:560px;text-align:center;font-size:12px;color:var(--amber);min-height:20px;letter-spacing:1px;line-height:1.7;}
+    .btn-row{display:flex;gap:6px;width:100%;max-width:560px;}
+    .sbtn{flex:1;background:var(--green-dark);border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 4px;cursor:pointer;letter-spacing:1px;transition:all .1s;text-align:center;}
+    .sbtn:hover{background:var(--green-dim);color:var(--bg);}
+    #cs{grid-column:1 / -1;text-align:center;padding:30px 10px;width:100%;}
+    #cs .big{font-family:'DotGothic16',monospace;font-size:20px;color:var(--cyan);text-shadow:0 0 10px var(--cyan);animation:pulse 1s ease-in-out infinite;letter-spacing:3px;}
+    #cs .big.red{color:var(--red);text-shadow:0 0 10px var(--red);}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+    #cs p{margin-top:10px;color:var(--green-dim);font-size:11px;line-height:1.8;}
+    #ctrl{margin-top:10px;border-top:1px solid var(--green-dark);padding-top:8px;font-size:13px;color:var(--green-dim);display:flex;justify-content:center;gap:16px;flex-wrap:wrap;}
+    #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:2px 6px;color:var(--green);font-family:inherit;font-size:13px;}
+    #legend{margin-top:8px;font-size:11px;color:var(--green-dim);line-height:1.8;border:1px solid var(--green-dark);padding:6px 12px;background:var(--green-faint);}
   </style>
 </head>
 <body>
-<div id="box">
-  <div id="tb"><span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; BLACKONYX.EXE</span><span class="blink">■</span><span>PC-9801</span></div>
-  <div id="bd">
-    <h1>ブラックオニキス</h1>
-    <div class="ge">RPG / DUNGEON</div>
-    <div class="wip"><span>-- UNDER CONSTRUCTION --</span></div>
-    <div class="msg">このゲームは現在開発中です。<br>しばらくお待ちください。<br><br><span class="blink">█</span></div>
-    <a class="back" href="../index.html">◀ MENU に戻る</a>
+<div id="terminal">
+  <div id="tb">
+    <span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; BLACKONYX.EXE ver 1.00</span>
+    <span class="blink">■</span>
+    <span>PC-9801</span>
+  </div>
+  <div id="screen">
+    <div id="hd">
+      <h1>ブラックオニキス</h1>
+      <div class="sub">BLACK ONYX &mdash; DUNGEON RPG (ORIGINAL HOMAGE)</div>
+    </div>
+    <div id="main">
+      <div id="map-wrap">
+        <div id="ga"><div style="grid-column:1 / -1;padding:40px 20px;color:var(--green-dim);font-size:13px;letter-spacing:3px;text-align:center;">LOADING...</div></div>
+      </div>
+      <div id="msg">ダンジョンに入った…</div>
+      <div id="panel">
+        <div class="panel-block"><div class="panel-label">FLOOR</div><div class="panel-value" id="s-floor">B1F</div><div class="panel-label" style="margin-left:12px;">Lv</div><div class="panel-value" id="s-lv">1</div><div class="panel-label" style="margin-left:12px;">EXP</div><div class="panel-value" id="s-exp">0</div><div class="panel-label" style="margin-left:12px;">GOLD</div><div class="panel-value" id="s-gold">0</div><div class="panel-label" style="margin-left:12px;">POTION</div><div class="panel-value" id="s-potion">1</div></div>
+        <div class="panel-block"><div class="panel-label">HP</div><div class="bar"><div class="bar-fill hp-fill" id="hp-bar" style="width:100%"></div></div><div class="panel-value" id="s-hp">30/30</div></div>
+        <div class="panel-block"><div class="panel-label">MP</div><div class="bar"><div class="bar-fill mp-fill" id="mp-bar" style="width:100%"></div></div><div class="panel-value" id="s-mp">12/12</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="sbtn" id="b-spell">🔥 F: 魔法 (MP5)</button>
+        <button class="sbtn" id="b-potion">🧪 H: ポーション</button>
+        <button class="sbtn" id="b-restart">R: やり直し</button>
+      </div>
+    </div>
+    <div id="ctrl">
+      <span><kbd>↑↓←→</kbd> / <kbd>WASD</kbd> 移動（敵にぶつかると攻撃）</span>
+      <span><kbd>F</kbd> 魔法</span>
+      <span><kbd>H</kbd> ポーション</span>
+      <span><kbd>R</kbd> やり直し</span>
+    </div>
+    <div id="legend">
+      🧙 プレイヤー &nbsp; 🧱 壁 &nbsp; 👹 モンスター &nbsp; 👑 B3Fのボス &nbsp; 🎁 宝箱（ポーション/ゴールド） &nbsp; 🪜 下り階段<br>
+      全3フロア。B3Fでボスを倒せばクリア。宝箱からポーションが手に入ります。※本作はオリジナルのオマージュで、マップ・文章は独自制作です。
+    </div>
   </div>
 </div>
+
+<script type="py">
+from pyscript import document
+from pyodide.ffi import create_proxy
+import random
+
+W, H = 12, 10
+WALL, FLOOR, STAIRS, TREASURE = '#', '.', '>', 'T'
+NAMES = ['スライムモドキ', 'コボルド影', '洞窟コウモリ', '石ゴブリン', '闇ミミック']
+BOSS_NAME = 'オニクスガーディアン'
+
+st = {
+    'grid': [], 'monsters': {}, 'p': (1, 1), 'floor': 1,
+    'hp': 30, 'maxhp': 30, 'mp': 12, 'maxmp': 12,
+    'lv': 1, 'exp': 0, 'gold': 0, 'potions': 1,
+    'over': False, 'clear': False, 'msg': 'ダンジョンに入った… 階段 🪜 を探そう。',
+    'attempt': 0,
+}
+
+def reachable(grid, start):
+    seen = set([start]); q = [start]
+    while q:
+        r, c = q.pop(0)
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr, nc = r+dr, c+dc
+            if 0 <= nr < H and 0 <= nc < W and (nr, nc) not in seen and grid[nr][nc] != WALL:
+                seen.add((nr, nc)); q.append((nr, nc))
+    return seen
+
+def gen_floor(floor):
+    # オリジナル生成マップ: 到達可能性を BFS で保証する
+    for attempt in range(200):
+        rng = random.Random(floor * 10000 + st['attempt'] * 977 + attempt)
+        grid = [[FLOOR]*W for _ in range(H)]
+        for r in range(H):
+            for c in range(W):
+                if r == 0 or r == H-1 or c == 0 or c == W-1:
+                    grid[r][c] = WALL
+        # 内壁
+        for _ in range(16):
+            r = rng.randint(1, H-2); c = rng.randint(1, W-2)
+            if (r, c) != (1, 1):
+                grid[r][c] = WALL
+        start = (1, 1); grid[1][1] = FLOOR
+        reach = reachable(grid, start)
+        free = [(r, c) for (r, c) in reach if (r, c) != start]
+        if len(free) < 12:
+            continue
+        rng.shuffle(free)
+        # 遠い場所を階段/ボス配置先にする
+        free.sort(key=lambda p: abs(p[0]-start[0]) + abs(p[1]-start[1]), reverse=True)
+        monsters = {}
+        if floor >= 3:
+            br, bc = free[0]
+            monsters[(br, bc)] = {'name': BOSS_NAME, 'hp': 42, 'maxhp': 42, 'atk': 8, 'exp': 60, 'gold': 100, 'boss': True}
+            spots = free[1:]
+        else:
+            sr, sc = free[0]
+            grid[sr][sc] = STAIRS
+            spots = free[1:]
+        # モンスター
+        n_mon = 3 + floor
+        for i in range(min(n_mon, len(spots))):
+            r, c = spots[i]
+            hp = rng.randint(6, 10) + floor * 4
+            monsters[(r, c)] = {'name': rng.choice(NAMES), 'hp': hp, 'maxhp': hp,
+                                'atk': rng.randint(2, 4) + floor, 'exp': 8 + floor * 4 + rng.randint(0, 5),
+                                'gold': rng.randint(5, 20), 'boss': False}
+        spots = spots[min(n_mon, len(spots)):]
+        # 宝箱
+        for i in range(min(3, len(spots))):
+            r, c = spots[i]
+            grid[r][c] = TREASURE
+        return grid, monsters
+    # フォールバック: 壁の少ない単純なフロア
+    grid = [[FLOOR]*W for _ in range(H)]
+    for r in range(H):
+        for c in range(W):
+            if r == 0 or r == H-1 or c == 0 or c == W-1:
+                grid[r][c] = WALL
+    monsters = {(H-2, W-2): {'name': BOSS_NAME if floor >= 3 else NAMES[0], 'hp': 20, 'maxhp': 20, 'atk': 4, 'exp': 20, 'gold': 30, 'boss': floor >= 3}}
+    if floor < 3:
+        grid[H-2][W-3] = STAIRS
+    grid[2][W-2] = TREASURE
+    return grid, monsters
+
+def new_game():
+    st['floor'] = 1; st['hp'] = 30; st['maxhp'] = 30; st['mp'] = 12; st['maxmp'] = 12
+    st['lv'] = 1; st['exp'] = 0; st['gold'] = 0; st['potions'] = 1
+    st['over'] = False; st['clear'] = False; st['attempt'] += 1
+    st['msg'] = 'ダンジョンに入った… 階段 🪜 を探そう。'
+    load_floor(1)
+
+def load_floor(floor):
+    st['floor'] = floor
+    st['grid'], st['monsters'] = gen_floor(floor)
+    st['p'] = (1, 1)
+    rd()
+
+def gain_exp(amount):
+    st['exp'] += amount
+    need = st['lv'] * 25
+    if st['exp'] >= need:
+        st['exp'] -= need; st['lv'] += 1
+        st['maxhp'] += 8; st['maxmp'] += 4
+        st['hp'] = min(st['maxhp'], st['hp'] + 15)
+        st['mp'] = st['maxmp']
+        return True
+    return False
+
+def player_die():
+    st['hp'] = 0; st['over'] = True
+    st['msg'] = '力尽きた… R でやり直し'
+
+def counter(mon):
+    dmg = max(1, mon['atk'] + random.randint(-1, 2))
+    st['hp'] -= dmg
+    if st['hp'] <= 0:
+        player_die()
+        return f" {mon['name']}の反撃で {dmg} ダメージ！"
+    return f" {mon['name']}の反撃で {dmg} ダメージ (HP {st['hp']})"
+
+def resolve_kill(pos, mon):
+    del st['monsters'][pos]
+    st['gold'] += mon['gold']
+    lvup = gain_exp(mon['exp'])
+    msg = f"{mon['name']}を倒した！ +{mon['exp']}EXP +{mon['gold']}G"
+    if lvup:
+        msg += f" ★レベルアップ！ Lv{st['lv']} HP/MPアップ！"
+    if mon.get('boss'):
+        st['clear'] = True
+        msg = 'ボスを倒した！ ダンジョン制覇！'
+    return msg
+
+def attack_at(pos, power_mult=1, spell=False):
+    mon = st['monsters'][pos]
+    base = random.randint(4, 8) + st['lv'] * 2
+    dmg = int(base * power_mult)
+    mon['hp'] -= dmg
+    label = '魔法攻撃' if spell else '攻撃'
+    if mon['hp'] <= 0:
+        st['msg'] = f"{label}で {dmg} ダメージ！ " + resolve_kill(pos, mon)
+    else:
+        st['msg'] = f"{label}で {dmg} ダメージ！ {mon['name']} HP {mon['hp']}/{mon['maxhp']}。" + counter(mon)
+    rd()
+
+def cast_spell():
+    if st['over'] or st['clear']:
+        return
+    if st['mp'] < 5:
+        st['msg'] = 'MPが足りない！ (必要 5)'; rd(); return
+    r, c = st['p']
+    adjacent = [(r+dr, c+dc) for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)] if (r+dr, c+dc) in st['monsters']]
+    if not adjacent:
+        st['msg'] = '魔法の対象がいない（敵に隣接して F）'; rd(); return
+    st['mp'] -= 5
+    attack_at(adjacent[0], power_mult=2, spell=True)
+
+def use_potion():
+    if st['over'] or st['clear']:
+        return
+    if st['potions'] <= 0:
+        st['msg'] = 'ポーションがない！ 宝箱を探そう。'
+    elif st['hp'] >= st['maxhp']:
+        st['msg'] = 'HPは満タンだ。'
+    else:
+        st['potions'] -= 1
+        heal = min(30, st['maxhp'] - st['hp'])
+        st['hp'] += heal
+        st['msg'] = f'ポーションを使った！ HP +{heal} (残り {st["potions"]})'
+    rd()
+
+def mv(dr, dc):
+    if st['over'] or st['clear']:
+        return
+    r, c = st['p']; nr, nc = r+dr, c+dc
+    if not (0 <= nr < H and 0 <= nc < W):
+        return
+    if (nr, nc) in st['monsters']:
+        attack_at((nr, nc)); return
+    cell = st['grid'][nr][nc]
+    if cell == WALL:
+        st['msg'] = '壁だ。'; rd(); return
+    st['p'] = (nr, nc)
+    if cell == TREASURE:
+        st['grid'][nr][nc] = FLOOR
+        roll = random.random()
+        if roll < 0.5:
+            st['potions'] += 1
+            st['msg'] = f'宝箱！ ポーションを手に入れた (所持 {st["potions"]})'
+        elif roll < 0.8:
+            g = random.randint(15, 40); st['gold'] += g
+            st['msg'] = f'宝箱！ {g} ゴールドを手に入れた！'
+        else:
+            heal = min(20, st['maxhp'] - st['hp']); st['hp'] += heal
+            st['msg'] = f'宝箱！ 回復の泉で HP +{heal}'
+    elif cell == STAIRS:
+        nf = st['floor'] + 1
+        st['msg'] = f'階段を下りた… B{nf}F'
+        load_floor(nf)
+        st['msg'] = f'B{nf}F に降りた。' + (' ボスの気配がする…' if nf >= 3 else ' さらに深くへ。')
+        rd(); return
+    else:
+        st['msg'] = f'B{st["floor"]}F を進む…'
+    rd()
+
+def rd():
+    document.getElementById('s-floor').textContent = f"B{st['floor']}F"
+    document.getElementById('s-lv').textContent = str(st['lv'])
+    document.getElementById('s-exp').textContent = str(st['exp'])
+    document.getElementById('s-gold').textContent = str(st['gold'])
+    document.getElementById('s-potion').textContent = str(st['potions'])
+    document.getElementById('s-hp').textContent = f"{max(0, st['hp'])}/{st['maxhp']}"
+    document.getElementById('s-mp').textContent = f"{st['mp']}/{st['maxmp']}"
+    document.getElementById('hp-bar').style.width = f"{max(0, st['hp']) * 100 // max(1, st['maxhp'])}%"
+    document.getElementById('mp-bar').style.width = f"{st['mp'] * 100 // max(1, st['maxmp'])}%"
+    document.getElementById('msg').textContent = st['msg']
+    ga = document.getElementById('ga')
+    if st['clear']:
+        ga.innerHTML = f'<div id="cs"><div class="big">*** DUNGEON CLEAR! ***</div><p>ボス {BOSS_NAME} を倒し、全3フロアを制覇した！</p><p>Lv {st["lv"]} / GOLD {st["gold"]}</p><p>R で再挑戦</p></div>'
+        return
+    if st['over']:
+        ga.innerHTML = '<div id="cs"><div class="big red">*** GAME OVER ***</div><p>冒険者は力尽きた…</p><p>R でやり直し</p></div>'
+        return
+    tiles = []
+    for r in range(H):
+        for c in range(W):
+            if (r, c) == st['p']:
+                tiles.append('<div class="tile t-player">🧙</div>'); continue
+            if (r, c) in st['monsters']:
+                mon = st['monsters'][(r, c)]
+                if mon.get('boss'):
+                    tiles.append('<div class="tile t-boss">👑</div>')
+                else:
+                    tiles.append('<div class="tile t-monster">👹</div>')
+                continue
+            cell = st['grid'][r][c]
+            if cell == WALL:
+                tiles.append('<div class="tile t-wall">🧱</div>')
+            elif cell == STAIRS:
+                tiles.append('<div class="tile t-stairs">🪜</div>')
+            elif cell == TREASURE:
+                tiles.append('<div class="tile t-treasure">🎁</div>')
+            else:
+                tiles.append('<div class="tile t-floor">·</div>')
+    ga.innerHTML = ''.join(tiles)
+
+def ok(e):
+    k = e.key
+    lk = k.lower() if len(k) == 1 else k
+    if k == 'ArrowUp' or lk == 'w':
+        mv(-1, 0)
+    elif k == 'ArrowDown' or lk == 's':
+        mv(1, 0)
+    elif k == 'ArrowLeft' or lk == 'a':
+        mv(0, -1)
+    elif k == 'ArrowRight' or lk == 'd':
+        mv(0, 1)
+    elif lk == 'f':
+        cast_spell()
+    elif lk == 'h':
+        use_potion()
+    elif lk == 'r':
+        new_game()
+    else:
+        return
+    e.preventDefault()
+
+def on_spell(e):
+    cast_spell()
+def on_potion(e):
+    use_potion()
+def on_restart(e):
+    new_game()
+
+document.addEventListener('keydown', create_proxy(ok))
+document.getElementById('b-spell').addEventListener('click', create_proxy(on_spell))
+document.getElementById('b-potion').addEventListener('click', create_proxy(on_potion))
+document.getElementById('b-restart').addEventListener('click', create_proxy(on_restart))
+new_game()
+</script>
 </body>
 </html>
