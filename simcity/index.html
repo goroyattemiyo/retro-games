@@ -24,16 +24,16 @@
 
     /* マップエリア */
     #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:12px;text-align:center;margin-bottom:10px;}
-    #ga{font-family:'Share Tech Mono',monospace;font-size:clamp(20px,3.5vw,32px);line-height:1.4;letter-spacing:0.05em;white-space:pre;display:inline-block;cursor:default;}
-    #ga span{display:inline;}
+    #ga{font-family:'Share Tech Mono',monospace;font-size:clamp(12px,2.2vw,20px);line-height:1;letter-spacing:0;white-space:normal;display:grid;grid-template-columns:repeat(20,1fr);gap:2px;width:100%;max-width:680px;margin:0 auto;cursor:pointer;}
+    #ga span.tile{display:flex;align-items:center;justify-content:center;aspect-ratio:1;min-width:0;overflow:hidden;border-radius:3px;line-height:1;}
 
-    /* セルカラー */
-    .c-empty  {color:#002208;}
-    .c-road   {color:#888;}
-    .c-res    {color:#00ff41;text-shadow:0 0 4px #00ff41;}
-    .c-com    {color:#ffb300;text-shadow:0 0 4px #ffb300;}
-    .c-ind    {color:#00e5ff;text-shadow:0 0 4px #00e5ff;}
-    .c-cursor {background:rgba(255,255,255,0.15);outline:1px solid #fff;}
+    /* セルカラー (タイル) */
+    .c-empty  {background:#0a2a10;color:rgba(0,255,65,.28);}
+    .c-road   {background:#2e2e2e;color:#d8d8d8;box-shadow:inset 0 0 0 1px #4a4a4a;}
+    .c-res    {background:#123d1a;color:#00ff41;text-shadow:0 0 4px #00ff41;box-shadow:inset 0 0 0 1px rgba(0,255,65,.45);}
+    .c-com    {background:#3d2e07;color:#ffb300;text-shadow:0 0 4px #ffb300;box-shadow:inset 0 0 0 1px rgba(255,179,0,.45);}
+    .c-ind    {background:#07333d;color:#00e5ff;text-shadow:0 0 4px #00e5ff;box-shadow:inset 0 0 0 1px rgba(0,229,255,.45);}
+    .c-cursor {outline:2px solid #fff;outline-offset:-2px;filter:brightness(1.65);box-shadow:0 0 8px rgba(255,255,255,.55);z-index:1;}
 
     /* ステータスバー */
     #statusbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
@@ -91,10 +91,10 @@
 
     <div id="toolbar">
       <span class="tool-label">ZONE:</span>
-      <button class="tbtn res active"  id="t-res">R 住宅</button>
-      <button class="tbtn com"         id="t-com">C 商業</button>
-      <button class="tbtn ind"         id="t-ind">I 工業</button>
-      <button class="tbtn road"        id="t-road">. 道路</button>
+      <button class="tbtn res active"  id="t-res">🏠 R 住宅</button>
+      <button class="tbtn com"         id="t-com">🏪 C 商業</button>
+      <button class="tbtn ind"         id="t-ind">🏭 I 工業</button>
+      <button class="tbtn road"        id="t-road">🛣 ─ 道路</button>
       <button class="tbtn bulldoze"    id="t-bull">X 撤去</button>
       <button class="nbtn"             id="t-next">▶ NEXT TURN</button>
     </div>
@@ -115,10 +115,11 @@
     </div>
 
     <div id="legend">
-      <span style="color:var(--green);">R </span>住宅(100円) &nbsp;
-      <span style="color:var(--amber);">C </span>商業(150円) &nbsp;
-      <span style="color:var(--cyan);">I </span>工業(200円) &nbsp;
-      <span style="color:#888;">. </span>道路(50円) &nbsp;
+      <span style="color:var(--green);">🏠 </span>住宅(100円) &nbsp;
+      <span style="color:var(--amber);">🏪 </span>商業(150円) &nbsp;
+      <span style="color:var(--cyan);">🏭 </span>工業(200円) &nbsp;
+      <span style="color:#888;">🛣 ─ </span>道路(50円) &nbsp;
+      <span style="color:rgba(0,255,65,.5);">· </span>空き地 &nbsp;
       道路に隣接すると人口・収益UP。満足度が下がると人口減。
     </div>
   </div>
@@ -138,7 +139,7 @@ IND   = 'I'
 
 COST  = {RES:100, COM:150, IND:200, ROAD:50}
 COLORS= {EMPTY:'c-empty', ROAD:'c-road', RES:'c-res', COM:'c-com', IND:'c-ind'}
-CHARS = {EMPTY:'·', ROAD:'.', RES:'R', COM:'C', IND:'I'}
+CHARS = {EMPTY:'·', ROAD:'─', RES:'🏠', COM:'🏪', IND:'🏭'}
 
 # === 状態 ===
 st = {
@@ -265,19 +266,17 @@ def place():
 def render():
     g = st['grid']
     cx, cy = st['cx'], st['cy']
-    lines = []
+    parts = []
     for r in range(H):
-        line = ''
         for c in range(W):
             cell = g[r][c]
             ch   = CHARS.get(cell, cell)
             cls  = COLORS.get(cell, 'c-empty')
             if r==cy and c==cx:
-                line += f'<span class="{cls} c-cursor">{ch}</span>'
+                parts.append(f'<span class="tile {cls} c-cursor">{ch}</span>')
             else:
-                line += f'<span class="{cls}">{ch}</span>'
-        lines.append(line)
-    document.getElementById('ga').innerHTML = '\n'.join(lines)
+                parts.append(f'<span class="tile {cls}">{ch}</span>')
+    document.getElementById('ga').innerHTML = ''.join(parts)
 
     document.getElementById('s-year').textContent  = str(st['year'])
     document.getElementById('s-pop').textContent   = str(st['pop'])
@@ -323,12 +322,14 @@ def on_tn(e): simulate(); render()
 def on_map_click(e):
     ga = document.getElementById('ga')
     rect = ga.getBoundingClientRect()
-    # セルサイズを推定
+    # セルサイズを推定 (タイルは <span class="tile"> なので 'span' 検索で一致する)
     spans = ga.querySelectorAll('span')
     if spans.length == 0: return
     first = spans[0].getBoundingClientRect()
-    cw = first.width if first.width > 0 else 16
-    ch_h = first.height if first.height > 0 else 22
+    # Grid pitch includes the 2px gap: prefer container size / grid count,
+    # and fall back to the first tile size + gap.
+    cw = (rect.width / W) if rect.width > 0 else (first.width + 2 if first.width > 0 else 16)
+    ch_h = (rect.height / H) if rect.height > 0 else (first.height + 2 if first.height > 0 else 22)
     x = e.clientX - rect.left
     y = e.clientY - rect.top
     cc = int(x // cw)
