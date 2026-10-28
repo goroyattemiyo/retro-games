@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>テトリス - TETRIS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
+  <style>
+    :root{--green:#00ff41;--green-dim:#00aa2a;--green-dark:#003f0f;--green-faint:#001a06;--amber:#ffb300;--cyan:#00e5ff;--bg:#000d02;--sl:rgba(0,255,65,.03);}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-x:hidden;padding:10px 0;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
+    body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
+    #terminal{width:min(1100px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(0,255,65,.2);background:var(--bg);}
+    #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
+    #tb a{color:var(--green-dim);text-decoration:none;} #tb a:hover{color:var(--green);}
+    .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+    #screen{padding:16px;}
+    #hd{text-align:center;margin-bottom:14px;border-bottom:1px solid var(--green-dark);padding-bottom:10px;}
+    #hd h1{font-family:'DotGothic16',monospace;font-size:26px;text-shadow:0 0 10px var(--cyan);letter-spacing:8px;color:var(--cyan);}
+    #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
+    #main{display:flex;gap:14px;justify-content:center;align-items:flex-start;flex-wrap:wrap;}
+    #map-wrap{background:#000;border:1px solid var(--green-dark);padding:10px;text-align:center;position:relative;}
+    /* 盤面: 10x20 CSSグリッドタイル */
+    #ga{display:grid;grid-template-columns:repeat(10,26px);gap:2px;justify-content:center;margin:0 auto;}
+    @media (max-width:520px){#ga{grid-template-columns:repeat(10,minmax(22px,7.5vw));}}
+    .tile{width:100%;aspect-ratio:1;border-radius:3px;background:#020f04;box-shadow:inset 0 0 0 1px rgba(0,255,65,.06);user-select:none;}
+    .tile.filled{box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.35),0 0 6px rgba(0,0,0,.4);}
+    .tile.ghost{opacity:.28;}
+    .c-I{background:#00e5ff;} .c-O{background:#ffd600;} .c-T{background:#b388ff;}
+    .c-S{background:#00ff41;} .c-Z{background:#ff3b3b;} .c-J{background:#2979ff;} .c-L{background:#ff6b35;}
+    #overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);z-index:5;text-align:center;padding:16px;}
+    #overlay .big{font-family:'DotGothic16',monospace;font-size:22px;color:#ff3b3b;text-shadow:0 0 12px #ff3b3b;letter-spacing:3px;animation:pulse 1s ease-in-out infinite;}
+    #overlay p{margin-top:10px;color:var(--green-dim);font-size:12px;line-height:1.8;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+    #panel{display:flex;flex-direction:column;gap:10px;min-width:170px;flex:0 1 190px;}
+    .panel-block{display:flex;align-items:center;gap:8px;border:1px solid var(--green-dark);background:var(--green-faint);padding:6px 10px;}
+    .panel-label{font-size:10px;color:var(--green-dim);letter-spacing:2px;white-space:nowrap;}
+    .panel-value{font-size:18px;color:var(--green);text-shadow:0 0 6px rgba(0,255,65,.3);min-width:2em;}
+    .panel-box{border:1px solid var(--green-dark);background:var(--green-faint);padding:8px 10px;}
+    .panel-box .panel-label{margin-bottom:6px;}
+    /* NEXT プレビュー: 小さなタイルグリッド */
+    #next{display:grid;grid-template-columns:repeat(4,22px);gap:2px;justify-content:center;min-height:50px;align-content:center;}
+    #next .tile{border-radius:2px;}
+    #msg{font-size:12px;color:var(--amber);min-height:18px;text-align:center;letter-spacing:1px;}
+    .btn-row{display:flex;gap:6px;}
+    .sbtn{flex:1;background:var(--green-dark);border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:11px;padding:7px 4px;cursor:pointer;letter-spacing:1px;transition:all .1s;text-align:center;}
+    .sbtn:hover{background:var(--green-dim);color:var(--bg);}
+    .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+    #ctrl{margin-top:12px;border-top:1px solid var(--green-dark);padding-top:8px;font-size:13px;color:var(--green-dim);display:flex;justify-content:center;gap:16px;flex-wrap:wrap;}
+    #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:2px 6px;color:var(--green);font-family:inherit;font-size:13px;}
+  </style>
+</head>
+<body>
+<div id="terminal">
+  <div id="tb">
+    <span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; TETRIS.EXE ver 1.00</span>
+    <span class="blink">■</span>
+    <span>PC-9801</span>
+  </div>
+  <div id="screen">
+    <div id="hd">
+      <h1>テトリス</h1>
+      <div class="sub">TETRIS &mdash; FALLING BLOCKS</div>
+    </div>
+    <div id="main">
+      <div id="map-wrap">
+        <div id="ga"><div style="grid-column:1 / -1;padding:40px 10px;color:var(--green-dim);font-size:13px;letter-spacing:3px;text-align:center;">LOADING...</div></div>
+        <div id="overlay"><div><div class="big" id="ov-title">GAME OVER</div><p id="ov-text">R キー / RESTART で再挑戦</p></div></div>
+      </div>
+      <div id="panel">
+        <div class="panel-block"><div class="panel-label">SCORE</div><div class="panel-value" id="s-score">0</div></div>
+        <div class="panel-block"><div class="panel-label">LINES</div><div class="panel-value" id="s-lines">0</div></div>
+        <div class="panel-block"><div class="panel-label">LEVEL</div><div class="panel-value" id="s-level">1</div></div>
+        <div class="panel-box"><div class="panel-label">NEXT</div><div id="next"></div></div>
+        <div id="msg">読み込み中…</div>
+        <div class="btn-row">
+          <button class="sbtn" id="b-pause">⏸ PAUSE</button>
+          <button class="sbtn" id="b-restart">RESTART</button>
+        </div>
+        <div class="pad">
+          <button class="sbtn" id="b-left">◀</button>
+          <button class="sbtn" id="b-rotate">⟳</button>
+          <button class="sbtn" id="b-right">▶</button>
+          <button class="sbtn" id="b-drop">⬇</button>
+        </div>
+        <div style="border:1px solid var(--green-dark);padding:8px 10px;background:var(--green-faint);font-size:11px;color:var(--green-dim);line-height:1.9;">
+          ラインをそろえて消そう。<br>10ラインごとにレベルアップ<br>して落下が速くなります。
+        </div>
+      </div>
+    </div>
+    <div id="ctrl">
+      <span><kbd>←→</kbd> 移動</span>
+      <span><kbd>↓</kbd> ソフトドロップ</span>
+      <span><kbd>↑</kbd> / <kbd>X</kbd> 回転</span>
+      <span><kbd>SPACE</kbd> ハードドロップ</span>
+      <span><kbd>P</kbd> 一時停止</span>
+      <span><kbd>R</kbd> リスタート</span>
+    </div>
+  </div>
+</div>
+
+<script type="py">
+from pyscript import document
+from pyodide.ffi import create_proxy
+import random
+
+# --- タイマー: JS setInterval を Python から使う ---
+# Pyodide では `from js import setInterval, clearInterval` で JS 関数を直接呼べる。
+# コールバックは create_proxy でラップし、参照をモジュール変数に保持して GC を防ぐ。
+# (proxy が回収されるとタイマーが無言で止まるため、必ず保持すること)
+try:
+    from js import setInterval, clearInterval
+    _HAS_INTERVAL = True
+except Exception:
+    _HAS_INTERVAL = False
+
+W = 10
+H = 20
+
+# 7種テトリミノ: 名前 -> (色クラス用キー, 初期マトリクス)
+# 実装はオリジナル。回転は行列の転置+反転で生成する。
+SHAPES = {
+    'I': [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+    'O': [[1, 1], [1, 1]],
+    'T': [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+    'S': [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
+    'Z': [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
+    'J': [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
+    'L': [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
+}
+TYPES = list(SHAPES.keys())
+SCORE_TABLE = [0, 100, 300, 500, 800]
+
+rng = random.Random()
+
+st = {
+    'board': [[None] * W for _ in range(H)],
+    'cur': None,      # {'type': str, 'mat': [[int]], 'x': int, 'y': int}
+    'next': None,     # type str
+    'score': 0,
+    'lines': 0,
+    'level': 1,
+    'over': False,
+    'paused': False,
+    'timer': None,    # setInterval の id
+    'started': False,
+}
+
+def speed_ms():
+    # レベル1: 600ms, レベルが上がるごとに 55ms 短縮, 下限 90ms
+    return max(90, 600 - (st['level'] - 1) * 55)
+
+def rotate_mat(mat):
+    # 時計回り回転
+    return [list(row) for row in zip(*mat[::-1])]
+
+def cells_of(mat, ox, oy):
+    out = []
+    for dy, row in enumerate(mat):
+        for dx, v in enumerate(row):
+            if v:
+                out.append((oy + dy, ox + dx))
+    return out
+
+def can_place(mat, ox, oy):
+    for r, c in cells_of(mat, ox, oy):
+        if c < 0 or c >= W or r >= H:
+            return False
+        if r >= 0 and st['board'][r][c] is not None:
+            return False
+    return True
+
+def make_piece(type_name):
+    mat = [row[:] for row in SHAPES[type_name]]
+    x = (W - len(mat[0])) // 2
+    # I は2行目にブロックがあるので少し上から出す
+    y = -1 if type_name == 'I' else 0
+    return {'type': type_name, 'mat': mat, 'x': x, 'y': y}
+
+def spawn():
+    if st['next'] is None:
+        st['next'] = rng.choice(TYPES)
+    cur_type = st['next']
+    st['next'] = rng.choice(TYPES)
+    piece = make_piece(cur_type)
+    st['cur'] = piece
+    if not can_place(piece['mat'], piece['x'], piece['y']):
+        st['over'] = True
+        stop_timer()
+        show_overlay('GAME OVER', 'スコア: ' + str(st['score']) + '<br>R キー / RESTART で再挑戦')
+    render()
+
+def lock_piece():
+    piece = st['cur']
+    if piece is None:
+        return
+    for r, c in cells_of(piece['mat'], piece['x'], piece['y']):
+        if 0 <= r < H and 0 <= c < W:
+            st['board'][r][c] = piece['type']
+        elif r < 0:
+            st['over'] = True
+    st['cur'] = None
+    cleared = clear_lines()
+    if cleared:
+        st['lines'] += cleared
+        st['score'] += SCORE_TABLE[cleared] * st['level']
+        new_level = st['lines'] // 10 + 1
+        if new_level != st['level']:
+            st['level'] = new_level
+            restart_timer()
+    if st['over']:
+        stop_timer()
+        show_overlay('GAME OVER', 'スコア: ' + str(st['score']) + '<br>R キー / RESTART で再挑戦')
+        render()
+        return
+    spawn()
+
+def clear_lines():
+    new_board = [row for row in st['board'] if any(cell is None for cell in row)]
+    cleared = H - len(new_board)
+    while len(new_board) < H:
+        new_board.insert(0, [None] * W)
+    st['board'] = new_board
+    return cleared
+
+def ghost_y():
+    piece = st['cur']
+    if piece is None:
+        return 0
+    y = piece['y']
+    while can_place(piece['mat'], piece['x'], y + 1):
+        y += 1
+    return y
+
+def render():
+    document.getElementById('s-score').textContent = str(st['score'])
+    document.getElementById('s-lines').textContent = str(st['lines'])
+    document.getElementById('s-level').textContent = str(st['level'])
+    # 表示用グリッド = 固定盤面 + ゴースト + 落下中ピース
+    grid = [[st['board'][r][c] for c in range(W)] for r in range(H)]
+    ghost = [[False] * W for _ in range(H)]
+    piece = st['cur']
+    if piece is not None and not st['over']:
+        gy = ghost_y()
+        for r, c in cells_of(piece['mat'], piece['x'], gy):
+            if 0 <= r < H and grid[r][c] is None:
+                ghost[r][c] = True
+                grid[r][c] = piece['type']
+        for r, c in cells_of(piece['mat'], piece['x'], piece['y']):
+            if 0 <= r < H:
+                ghost[r][c] = False
+                grid[r][c] = piece['type']
+    tiles = []
+    for r in range(H):
+        for c in range(W):
+            t = grid[r][c]
+            if t is None:
+                tiles.append('<div class="tile"></div>')
+            elif ghost[r][c]:
+                tiles.append(f'<div class="tile filled ghost c-{t}"></div>')
+            else:
+                tiles.append(f'<div class="tile filled c-{t}"></div>')
+    document.getElementById('ga').innerHTML = ''.join(tiles)
+    # NEXT プレビュー (4x4)
+    nxt = st['next']
+    prev = []
+    if nxt is not None:
+        mat = SHAPES[nxt]
+        canvas = [[None] * 4 for _ in range(4)]
+        oy = (4 - len(mat)) // 2
+        ox = (4 - len(mat[0])) // 2
+        for dy, row in enumerate(mat):
+            for dx, v in enumerate(row):
+                if v:
+                    canvas[oy + dy][ox + dx] = nxt
+        for r in range(4):
+            for c in range(4):
+                t = canvas[r][c]
+                if t is None:
+                    prev.append('<div class="tile"></div>')
+                else:
+                    prev.append(f'<div class="tile filled c-{t}"></div>')
+    document.getElementById('next').innerHTML = ''.join(prev)
+    if st['paused']:
+        set_msg('⏸ 一時停止中 — P で再開')
+    elif st['over']:
+        set_msg('ゲームオーバー')
+    else:
+        set_msg('')
+
+def set_msg(text):
+    try:
+        document.getElementById('msg').textContent = text
+    except Exception:
+        pass
+
+def show_overlay(title, html_text):
+    ov = document.getElementById('overlay')
+    document.getElementById('ov-title').textContent = title
+    document.getElementById('ov-text').innerHTML = html_text
+    ov.style.display = 'flex'
+
+def hide_overlay():
+    document.getElementById('overlay').style.display = 'none'
+
+# --- 移動・操作 ---
+def try_move(dx, dy):
+    piece = st['cur']
+    if piece is None or st['over'] or st['paused']:
+        return False
+    if can_place(piece['mat'], piece['x'] + dx, piece['y'] + dy):
+        piece['x'] += dx
+        piece['y'] += dy
+        render()
+        return True
+    return False
+
+def do_rotate():
+    piece = st['cur']
+    if piece is None or st['over'] or st['paused']:
+        return
+    if piece['type'] == 'O':
+        return
+    new_mat = rotate_mat(piece['mat'])
+    # 簡易ウォールキック: そのまま / 左右1 / 左右2 を試す
+    for dx in (0, -1, 1, -2, 2):
+        if can_place(new_mat, piece['x'] + dx, piece['y']):
+            piece['mat'] = new_mat
+            piece['x'] += dx
+            render()
+            return
+
+def soft_drop():
+    if not try_move(0, 1):
+        if not (st['over'] or st['paused']):
+            lock_piece()
+    else:
+        st['score'] += 1
+
+def hard_drop():
+    piece = st['cur']
+    if piece is None or st['over'] or st['paused']:
+        return
+    dist = 0
+    while can_place(piece['mat'], piece['x'], piece['y'] + 1):
+        piece['y'] += 1
+        dist += 1
+    st['score'] += dist * 2
+    lock_piece()
+
+def tick(*args):
+    # setInterval コールバック。引数は JS 側都合に合わせて *args で受ける。
+    if st['over'] or st['paused'] or st['cur'] is None:
+        return
+    if not try_move(0, 1):
+        lock_piece()
+
+# create_proxy は一度だけ作って保持する (タイマー / イベント共用)
+_tick_proxy = create_proxy(tick)
+
+def stop_timer():
+    if st['timer'] is not None and _HAS_INTERVAL:
+        try:
+            clearInterval(st['timer'])
+        except Exception:
+            pass
+    st['timer'] = None
+
+def start_timer():
+    stop_timer()
+    if not _HAS_INTERVAL:
+        # フォールバック: setInterval が使えない環境では自動落下しない。
+        # その場合は ↓ / SPACE の手動操作でのみ進む (キー操作は有効)。
+        set_msg('タイマー利用不可: ↓キーで落下させてください')
+        return
+    st['timer'] = setInterval(_tick_proxy, speed_ms())
+
+def restart_timer():
+    if st['started'] and not st['over'] and not st['paused']:
+        start_timer()
+
+def toggle_pause():
+    if st['over']:
+        return
+    st['paused'] = not st['paused']
+    if st['paused']:
+        stop_timer()
+        show_overlay('PAUSED', 'P キー / PAUSE ボタンで再開')
+    else:
+        hide_overlay()
+        start_timer()
+    render()
+
+def restart():
+    st['board'] = [[None] * W for _ in range(H)]
+    st['cur'] = None
+    st['next'] = None
+    st['score'] = 0
+    st['lines'] = 0
+    st['level'] = 1
+    st['over'] = False
+    st['paused'] = False
+    st['started'] = True
+    hide_overlay()
+    spawn()
+    start_timer()
+    render()
+
+def on_key(e):
+    k = e.key
+    if k == 'ArrowLeft':
+        try_move(-1, 0)
+    elif k == 'ArrowRight':
+        try_move(1, 0)
+    elif k == 'ArrowDown':
+        soft_drop()
+    elif k == 'ArrowUp' or k in ('x', 'X'):
+        do_rotate()
+    elif k == ' ':
+        hard_drop()
+    elif k in ('p', 'P'):
+        toggle_pause()
+        return
+    elif k in ('r', 'R'):
+        restart()
+        return
+    else:
+        return
+    e.preventDefault()
+
+def on_pause(e):
+    toggle_pause()
+
+def on_restart(e):
+    restart()
+
+def on_left(e):
+    try_move(-1, 0)
+
+def on_right(e):
+    try_move(1, 0)
+
+def on_rotate(e):
+    do_rotate()
+
+def on_drop(e):
+    hard_drop()
+
+# ハンドラ proxy も参照を保持する
+_key_proxy = create_proxy(on_key)
+document.addEventListener('keydown', _key_proxy)
+document.getElementById('b-pause').addEventListener('click', create_proxy(on_pause))
+document.getElementById('b-restart').addEventListener('click', create_proxy(on_restart))
+document.getElementById('b-left').addEventListener('click', create_proxy(on_left))
+document.getElementById('b-right').addEventListener('click', create_proxy(on_right))
+document.getElementById('b-rotate').addEventListener('click', create_proxy(on_rotate))
+document.getElementById('b-drop').addEventListener('click', create_proxy(on_drop))
+
+restart()
+</script>
+</body>
+</html>
