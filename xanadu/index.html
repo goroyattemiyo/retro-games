@@ -2,38 +2,333 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>ザナドゥ - RETRO GAME CENTER</title>
+  <title>ザナドゥ - XANADU</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
   <style>
-    :root{--c:#ff80ab;--bg:#000d02;--gd:#003f0f;--gm:#00aa2a;--sl:rgba(0,255,65,.025);}
+    :root{--green:#00ff41;--green-dim:#00aa2a;--green-dark:#003f0f;--green-faint:#001a06;--amber:#ffb300;--pink:#ff80ab;--cyan:#00e5ff;--red:#ff5252;--bg:#000d02;--sl:rgba(0,255,65,.03);}
     *{margin:0;padding:0;box-sizing:border-box;}
-    body{background:var(--bg);color:var(--c);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+    body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0;}
     body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
     body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
-    #box{width:min(560px,95vw);border:2px solid var(--gm);background:#000;}
-    #tb{background:var(--gd);border-bottom:1px solid var(--gm);padding:4px 12px;display:flex;justify-content:space-between;font-size:11px;color:var(--gm);letter-spacing:2px;}
-    #tb a{color:var(--gm);text-decoration:none;} #tb a:hover{color:#00ff41;}
-    #bd{padding:40px 30px;text-align:center;}
-    h1{font-family:'DotGothic16',monospace;font-size:clamp(24px,6vw,40px);color:var(--c);text-shadow:0 0 12px var(--c);letter-spacing:6px;margin-bottom:8px;}
-    .ge{font-size:11px;color:var(--gm);letter-spacing:4px;margin-bottom:32px;}
-    .wip{border:1px solid var(--c);padding:16px 32px;display:inline-block;margin-bottom:32px;opacity:.6;}
-    .wip span{font-size:18px;color:var(--c);letter-spacing:4px;}
-    .msg{font-size:12px;color:var(--gm);line-height:1.9;}
-    a.back{display:inline-block;margin-top:24px;color:var(--gm);font-size:12px;text-decoration:none;border:1px solid var(--gd);padding:6px 16px;letter-spacing:2px;}
-    a.back:hover{color:#00ff41;border-color:var(--gm);}
+    #terminal{width:min(1100px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(255,128,171,.18),0 0 30px rgba(0,255,65,.15);background:var(--bg);}
+    #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
+    #tb a{color:var(--green-dim);text-decoration:none;} #tb a:hover{color:var(--green);}
     .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+    #screen{padding:16px;}
+    #hd{text-align:center;margin-bottom:12px;border-bottom:1px solid var(--green-dark);padding-bottom:10px;}
+    #hd h1{font-family:'DotGothic16',monospace;font-size:26px;text-shadow:0 0 10px var(--pink);letter-spacing:8px;color:var(--pink);}
+    #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
+    #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:10px;text-align:center;margin-bottom:10px;}
+    #ga{display:grid;grid-template-columns:repeat(14,44px);gap:3px;justify-content:center;width:100%;max-width:660px;margin:0 auto;}
+    @media (max-width:700px){#ga{grid-template-columns:repeat(14,minmax(20px,6.2vw));}}
+    .tile{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(15px,3vw,24px);line-height:1;border-radius:4px;user-select:none;overflow:hidden;position:relative;}
+    .t-wall{background:linear-gradient(135deg,#3a3f4a,#23262e 60%,#15171c);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),inset 0 -3px 0 rgba(0,0,0,.4);}
+    .t-floor{background:#07160a;box-shadow:inset 0 0 0 1px rgba(0,255,65,.05);}
+    .t-floor2{background:#0a1a0c;box-shadow:inset 0 0 0 1px rgba(0,255,65,.05);}
+    .t-player{background:radial-gradient(circle at 50% 40%,rgba(255,128,171,.45),#1a0610 78%);box-shadow:inset 0 0 0 1px rgba(255,128,171,.65),0 0 10px rgba(255,128,171,.5);}
+    .t-enemy{background:radial-gradient(circle at 50% 40%,rgba(255,82,82,.3),#160404 78%);box-shadow:inset 0 0 0 1px rgba(255,82,82,.4);}
+    .t-boss{background:radial-gradient(circle at 50% 40%,rgba(255,179,0,.5),#1a0d00 80%);box-shadow:inset 0 0 0 1px rgba(255,179,0,.8),0 0 14px rgba(255,179,0,.6);font-size:clamp(18px,3.6vw,28px);}
+    .t-item{background:#101a05;box-shadow:inset 0 0 0 1px rgba(255,179,0,.45),0 0 8px rgba(255,179,0,.25);}
+    .t-treasure{background:#1a1400;box-shadow:inset 0 0 0 1px rgba(255,179,0,.7),0 0 10px rgba(255,179,0,.4);}
+    /* ステータス */
+    #status{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px;}
+    .stat-block{border:1px solid var(--green-dark);background:var(--green-faint);padding:6px 10px;}
+    .stat-label{font-size:10px;color:var(--green-dim);letter-spacing:2px;margin-bottom:3px;}
+    .stat-value{font-size:16px;color:var(--green);text-shadow:0 0 6px rgba(0,255,65,.3);}
+    .stat-value.pink{color:var(--pink);} .stat-value.amber{color:var(--amber);} .stat-value.cyan{color:var(--cyan);} .stat-value.small{font-size:12px;}
+    .bar{height:9px;background:#021206;border:1px solid var(--green-dark);margin-top:4px;overflow:hidden;}
+    .bar-fill{height:100%;transition:width .2s;}
+    #hp-fill{background:linear-gradient(90deg,#00aa2a,var(--green));box-shadow:0 0 8px rgba(0,255,65,.6);}
+    #mp-fill{background:linear-gradient(90deg,#0077aa,var(--cyan));box-shadow:0 0 8px rgba(0,229,255,.6);}
+    #exp-fill{background:linear-gradient(90deg,#aa77ff,#ff80ab);box-shadow:0 0 8px rgba(255,128,171,.6);}
+    /* ログ */
+    #log{border:1px solid var(--green-dark);background:#000;padding:8px 12px;font-size:12px;line-height:1.8;color:var(--green-dim);min-height:96px;margin-bottom:8px;}
+    #log .l-top{color:var(--green);}
+    #ctrl{border-top:1px solid var(--green-dark);padding-top:8px;font-size:12px;color:var(--green-dim);display:flex;justify-content:center;gap:14px;flex-wrap:wrap;align-items:center;}
+    #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:2px 6px;color:var(--green);font-family:inherit;font-size:12px;}
+    .sbtn{background:var(--green-dark);border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:11px;padding:5px 12px;cursor:pointer;letter-spacing:1px;}
+    .sbtn:hover{background:var(--green-dim);color:var(--bg);}
+    #cs{grid-column:1 / -1;text-align:center;padding:30px 10px;width:100%;}
+    #cs .big{font-family:'DotGothic16',monospace;font-size:20px;color:var(--amber);text-shadow:0 0 10px var(--amber);animation:pulse 1s ease-in-out infinite;letter-spacing:3px;}
+    #cs .big.over{color:var(--red);text-shadow:0 0 10px var(--red);}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+    #cs p{margin-top:10px;color:var(--green-dim);font-size:11px;line-height:1.9;}
+    #legend{margin-top:10px;border:1px solid var(--green-dark);padding:8px 12px;background:var(--green-faint);font-size:11px;color:var(--green-dim);line-height:1.9;}
   </style>
 </head>
 <body>
-<div id="box">
-  <div id="tb"><span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; XANADU.EXE</span><span class="blink">■</span><span>PC-9801</span></div>
-  <div id="bd">
-    <h1>ザナドゥ</h1>
-    <div class="ge">ACTION RPG / FALCOM</div>
-    <div class="wip"><span>-- UNDER CONSTRUCTION --</span></div>
-    <div class="msg">このゲームは現在開発中です。<br>しばらくお待ちください。<br><br><span class="blink">█</span></div>
-    <a class="back" href="../index.html">◀ MENU に戻る</a>
+<div id="terminal">
+  <div id="tb">
+    <span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; XANADU.EXE ver 1.00</span>
+    <span class="blink">■</span><span>PC-9801</span>
+  </div>
+  <div id="screen">
+    <div id="hd"><h1>ザナドゥ</h1><div class="sub">XANADU &mdash; ACTION RPG QUEST</div></div>
+    <div id="map-wrap"><div id="ga"><div style="grid-column:1 / -1;padding:40px 20px;color:var(--green-dim);font-size:13px;letter-spacing:3px;text-align:center;">LOADING...</div></div></div>
+
+    <div id="status">
+      <div class="stat-block"><div class="stat-label">Lv / 冒険者</div><div class="stat-value pink" id="s-lv">1</div></div>
+      <div class="stat-block"><div class="stat-label">HP <span id="s-hp" style="float:right;">24/24</span></div><div class="bar"><div class="bar-fill" id="hp-fill" style="width:100%;"></div></div></div>
+      <div class="stat-block"><div class="stat-label">MP <span id="s-mp" style="float:right;">6/6</span></div><div class="bar"><div class="bar-fill" id="mp-fill" style="width:100%;"></div></div></div>
+      <div class="stat-block"><div class="stat-label">EXP <span id="s-exp" style="float:right;">0/20</span></div><div class="bar"><div class="bar-fill" id="exp-fill" style="width:0%;"></div></div></div>
+      <div class="stat-block"><div class="stat-label">ATK / DEF</div><div class="stat-value" id="s-ad">5 / 1</div></div>
+      <div class="stat-block"><div class="stat-label">GOLD</div><div class="stat-value amber" id="s-gold">0 G</div></div>
+      <div class="stat-block"><div class="stat-label">武器</div><div class="stat-value small cyan" id="s-weapon">素手</div></div>
+      <div class="stat-block"><div class="stat-label">防具</div><div class="stat-value small cyan" id="s-armor">布の服</div></div>
+    </div>
+
+    <div id="log"></div>
+
+    <div id="ctrl">
+      <span><kbd>↑↓←→</kbd>/<kbd>WASD</kbd> 移動・体当たり攻撃</span>
+      <span><kbd>F</kbd> ファイア (MP3)</span>
+      <span><kbd>R</kbd> やり直し</span>
+      <button class="sbtn" id="bf">🔥 FIRE</button>
+      <button class="sbtn" id="br">↻ RESTART</button>
+    </div>
+
+    <div id="legend">
+      🧙 あなた &nbsp; 🟢 スライム &nbsp; 🦇 コウモリ &nbsp; 💀 スケルトン &nbsp; 👹 オーク &nbsp; 🐉 ボス（南東の間）<br>
+      ⚔️🗡️ 武器＝ATK↑ &nbsp; 🛡️ 防具＝DEF↑ &nbsp; 🌿 薬草＝HP回復 &nbsp; 💰 宝箱＝ゴールド<br>
+      敵にぶつかると攻撃。敵は数歩ごとに近づいてくる。装備を拾って奥のボスを倒せばクリア！
+    </div>
   </div>
 </div>
+
+<script type="py">
+from pyscript import document
+from pyodide.ffi import create_proxy
+import random
+
+# オリジナルのフィールド＋洞窟マップ (14x10) ※原作マップの複製ではない
+MAP=[
+ "##############",
+ "#P....#......#",
+ "#.##..#..E...#",
+ "#..#.....##a.#",
+ "#..#..S..#...#",
+ "#.E....E.#.H.#",
+ "#....##....w.#",
+ "#..A.#...E...#",
+ "#....#..T...B#",
+ "##############",
+]
+ENEMY_DEFS={
+ (2,9):{'name':'スケルトン','icon':'💀','hp':16,'atk':5,'df':1,'exp':22,'gold':22},
+ (5,2):{'name':'スライム','icon':'🟢','hp':10,'atk':3,'df':0,'exp':12,'gold':10},
+ (5,7):{'name':'コウモリ','icon':'🦇','hp':12,'atk':4,'df':0,'exp':16,'gold':14},
+ (7,9):{'name':'オーク','icon':'👹','hp':20,'atk':6,'df':1,'exp':28,'gold':30},
+}
+BOSS_DEF={'name':'洞窟の主 ドラゴン','icon':'🐉','hp':38,'atk':8,'df':2,'exp':60,'gold':100}
+ITEM_DEFS={
+ 'S':{'name':'青銅の剣','icon':'⚔️','kind':'weapon','bonus':3},
+ 'w':{'name':'炎の剣','icon':'🗡️','kind':'weapon','bonus':6},
+ 'A':{'name':'革の鎧','icon':'🛡️','kind':'armor','bonus':2},
+ 'a':{'name':'鉄の盾','icon':'🛡️','kind':'armor','bonus':4},
+ 'H':{'name':'薬草','icon':'🌿','kind':'heal','bonus':14},
+ 'T':{'name':'宝箱','icon':'💰','kind':'gold','bonus':50},
+}
+rng=random.Random()
+st={}
+
+def build_world():
+    walls=set(); items={}; enemies=[]; player=(1,1)
+    for r,row in enumerate(MAP):
+        for c,ch in enumerate(row):
+            if ch=='#': walls.add((r,c))
+            elif ch=='P': player=(r,c)
+            elif ch=='E':
+                d=dict(ENEMY_DEFS.get((r,c), ENEMY_DEFS[(5,2)])); d['r']=r; d['c']=c; d['maxhp']=d['hp']; d['boss']=False; enemies.append(d)
+            elif ch=='B':
+                d=dict(BOSS_DEF); d['r']=r; d['c']=c; d['maxhp']=d['hp']; d['boss']=True; enemies.append(d)
+            elif ch in ITEM_DEFS:
+                items[(r,c)]=dict(ITEM_DEFS[ch])
+    return walls,items,enemies,player
+
+def new_game(msg="洞窟に足を踏み入れた… 奥から咆哮が聞こえる。"):
+    walls,items,enemies,player=build_world()
+    st.update({'walls':walls,'items':items,'enemies':enemies,'p':player,
+      'hp':24,'maxhp':24,'mp':6,'maxmp':6,'lv':1,'exp':0,
+      'base_atk':5,'base_df':1,'wbonus':0,'abonus':0,'weapon':'素手','armor':'布の服',
+      'gold':0,'steps':0,'done':False,'over':False,'logs':[]})
+    log(msg)
+    log("武器と防具を探し、南東のボスを倒そう。")
+    rd()
+
+def atk_total(): return st['base_atk']+st['wbonus']
+def df_total(): return st['base_df']+st['abonus']
+def exp_next(): return st['lv']*20
+
+def log(m):
+    st['logs'].append(m); st['logs']=st['logs'][-5:]
+
+def enemy_at(r,c):
+    for e in st['enemies']:
+        if e['r']==r and e['c']==c: return e
+    return None
+
+def hurt_player(raw, who):
+    dmg=max(1, raw-df_total()+rng.randint(0,2))
+    st['hp']-=dmg
+    log(f"{who}の反撃！ {dmg} のダメージを受けた。")
+    if st['hp']<=0:
+        st['hp']=0; st['over']=True; log("力尽きた… GAME OVER")
+
+def gain_exp(e):
+    st['gold']+=e['gold']; st['exp']+=e['exp']
+    log(f"{e['name']}を倒した！ {e['exp']} EXP / {e['gold']} G を得た。")
+    while st['exp']>=exp_next():
+        st['exp']-=exp_next(); st['lv']+=1
+        st['maxhp']+=5; st['hp']=min(st['maxhp'], st['hp']+10)
+        st['maxmp']+=2; st['mp']=st['maxmp']; st['base_atk']+=1; st['base_df']+=1
+        log(f"★ LEVEL UP! Lv{st['lv']} になった！ ATK/DEF+1, HP回復")
+
+def kill_check(e):
+    if e['hp']>0: return False
+    st['enemies'].remove(e); gain_exp(e)
+    if e['boss']:
+        st['done']=True; log("ボスを倒した！ *** CLEAR ***")
+    return True
+
+def player_attack(e):
+    dmg=max(1, atk_total()-e['df']+rng.randint(0,2))
+    e['hp']-=dmg
+    log(f"{e['name']}に体当たり攻撃！ {dmg} のダメージ (敵HP {max(0,e['hp'])}/{e['maxhp']})")
+    if not kill_check(e):
+        hurt_player(e['atk'], e['name'])
+
+def is_free(r,c,ignore=None):
+    if (r,c) in st['walls']: return False
+    if (r,c)==st['p']: return False
+    if (r,c) in st['items']: return False
+    for e in st['enemies']:
+        if e is not ignore and e['r']==r and e['c']==c: return False
+    return 0<=r<10 and 0<=c<14
+
+def enemy_phase():
+    for e in list(st['enemies']):
+        if st['over'] or st['done']: return
+        if e['boss']:  # ボスはその場で待ち構え、隣接時のみ攻撃
+            if abs(e['r']-st['p'][0])+abs(e['c']-st['p'][1])==1:
+                hurt_player(e['atk'], e['name'])
+            continue
+        pr,pc=st['p']; dist=abs(e['r']-pr)+abs(e['c']-pc)
+        if dist==1:
+            hurt_player(e['atk'], e['name']); continue
+        cands=[(e['r']+dr,e['c']+dc) for dr,dc in [(-1,0),(1,0),(0,-1),(0,1)]]
+        moved=False
+        if dist<=5:  # 追跡：距離が縮むマスを優先
+            cands.sort(key=lambda x: abs(x[0]-pr)+abs(x[1]-pc))
+            for nr,nc in cands:
+                if is_free(nr,nc,ignore=e): e['r'],e['c']=nr,nc; moved=True; break
+        if not moved and rng.random()<0.5:  # ランダム徘徊
+            rng.shuffle(cands)
+            for nr,nc in cands:
+                if is_free(nr,nc,ignore=e): e['r'],e['c']=nr,nc; break
+
+def after_action():
+    st['steps']+=1
+    if st['steps']%3==0 and not st['over'] and not st['done']:
+        enemy_phase()
+    if st['steps']%5==0 and st['mp']<st['maxmp']:
+        st['mp']+=1
+    rd()
+
+def apply_item(it):
+    k=it['kind']
+    if k=='weapon':
+        if it['bonus']>st['wbonus']:
+            st['wbonus']=it['bonus']; st['weapon']=it['name']; log(f"⚔️ {it['name']}を手に入れた！ ATKが {atk_total()} に上がった。")
+        else: log(f"{it['name']}があったが、今の武器の方が強い。")
+    elif k=='armor':
+        if it['bonus']>st['abonus']:
+            st['abonus']=it['bonus']; st['armor']=it['name']; log(f"🛡️ {it['name']}を手に入れた！ DEFが {df_total()} に上がった。")
+        else: log(f"{it['name']}があったが、今の防具の方が強い。")
+    elif k=='heal':
+        st['hp']=min(st['maxhp'], st['hp']+it['bonus']); log(f"🌿 薬草を使った！ HPが {it['bonus']} 回復した。")
+    elif k=='gold':
+        st['gold']+=it['bonus']; log(f"💰 宝箱を開けた！ {it['bonus']} G を手に入れた。")
+
+def mv(dr,dc):
+    if st['done'] or st['over']: return
+    r,c=st['p']; nr,nc=r+dr,c+dc
+    if (nr,nc) in st['walls']:
+        log("壁で進めない。"); rd(); return
+    e=enemy_at(nr,nc)
+    if e:
+        player_attack(e); after_action(); return
+    st['p']=(nr,nc)
+    if (nr,nc) in st['items']:
+        apply_item(st['items'].pop((nr,nc)))
+    after_action()
+
+def cast_fire():
+    if st['done'] or st['over']: return
+    if st['mp']<3: log("MPが足りない！ (5歩でMP+1回復)"); rd(); return
+    pr,pc=st['p']; near=None; best=99
+    for e in st['enemies']:
+        d=abs(e['r']-pr)+abs(e['c']-pc)
+        if d<best: best=d; near=e
+    if near is None or best>3: log("届く範囲に敵がいない。(射程3)"); rd(); return
+    st['mp']-=3
+    dmg=max(1, atk_total()+3-near['df'])
+    near['hp']-=dmg
+    log(f"🔥 ファイア！ {near['name']}に {dmg} のダメージ (反撃なし)")
+    kill_check(near)
+    after_action()
+
+def rd():
+    document.getElementById('s-lv').textContent=str(st['lv'])
+    document.getElementById('s-hp').textContent=f"{st['hp']}/{st['maxhp']}"
+    document.getElementById('hp-fill').style.width=f"{int(st['hp']*100/st['maxhp']) if st['maxhp'] else 0}%"
+    document.getElementById('s-mp').textContent=f"{st['mp']}/{st['maxmp']}"
+    document.getElementById('mp-fill').style.width=f"{int(st['mp']*100/st['maxmp']) if st['maxmp'] else 0}%"
+    document.getElementById('s-exp').textContent=f"{st['exp']}/{exp_next()}"
+    document.getElementById('exp-fill').style.width=f"{int(st['exp']*100/exp_next())}%"
+    document.getElementById('s-ad').textContent=f"{atk_total()} / {df_total()}"
+    document.getElementById('s-gold').textContent=f"{st['gold']} G"
+    document.getElementById('s-weapon').textContent=st['weapon']
+    document.getElementById('s-armor').textContent=st['armor']
+    lg=document.getElementById('log')
+    lg.innerHTML=''.join(f'<div class="{"l-top" if i==len(st["logs"])-1 else ""}">＞ {m}</div>' for i,m in enumerate(st['logs']))
+    ga=document.getElementById('ga')
+    if st['done']:
+        ga.innerHTML=f'<div id="cs"><div class="big">*** CLEAR! ***</div><p>ボスを倒し、洞窟に平和が戻った！<br>Lv {st["lv"]} / GOLD {st["gold"]} G / {st["steps"]} 歩<br>R で もう一度冒険</p></div>'; return
+    if st['over']:
+        ga.innerHTML=f'<div id="cs"><div class="big over">GAME OVER</div><p>冒険者は力尽きた…<br>到達 Lv {st["lv"]} / GOLD {st["gold"]} G<br>R で リトライ</p></div>'; return
+    tiles=[]
+    for r in range(10):
+        for c in range(14):
+            pos=(r,c)
+            if pos==st['p']: tiles.append('<div class="tile t-player">🧙</div>'); continue
+            e=enemy_at(r,c)
+            if e: tiles.append(f'<div class="tile {"t-boss" if e["boss"] else "t-enemy"}">{e["icon"]}</div>'); continue
+            if pos in st['walls']: tiles.append('<div class="tile t-wall">🪨</div>'); continue
+            if pos in st['items']:
+                it=st['items'][pos]
+                tiles.append(f'<div class="tile {"t-treasure" if it["kind"]=="gold" else "t-item"}">{it["icon"]}</div>'); continue
+            tiles.append(f'<div class="tile {"t-floor" if (r+c)%2==0 else "t-floor2"}"></div>')
+    ga.innerHTML=''.join(tiles)
+
+def ok(e):
+    k=e.key; kl=k.lower()
+    if k=='ArrowUp' or kl=='w': mv(-1,0)
+    elif k=='ArrowDown' or kl=='s': mv(1,0)
+    elif k=='ArrowLeft' or kl=='a': mv(0,-1)
+    elif k=='ArrowRight' or kl=='d': mv(0,1)
+    elif kl=='f' or k==' ': cast_fire()
+    elif kl=='r': new_game("最初からやり直した。洞窟の入口に戻った。")
+    e.preventDefault()
+
+def on_r(ev): new_game("最初からやり直した。洞窟の入口に戻った。")
+def on_f(ev): cast_fire()
+
+document.addEventListener('keydown', create_proxy(ok))
+document.getElementById('br').addEventListener('click', create_proxy(on_r))
+document.getElementById('bf').addEventListener('click', create_proxy(on_f))
+new_game()
+</script>
 </body>
 </html>
