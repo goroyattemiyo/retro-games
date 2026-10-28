@@ -23,13 +23,30 @@
 
     /* メインレイアウト：マップ上・情報下 */
     #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:10px;text-align:center;margin-bottom:8px;}
-    #ga{font-family:'Share Tech Mono',monospace;font-size:clamp(18px,3vw,28px);line-height:1.5;letter-spacing:0.1em;white-space:pre;display:inline-block;}
+    #ga{display:grid;grid-template-columns:repeat(16,1fr);gap:2px;width:100%;max-width:780px;margin:0 auto;font-family:'Share Tech Mono',monospace;line-height:1;white-space:normal;}
+    .tile{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;border:1px solid rgba(0,255,65,.07);border-radius:3px;background:#021a08;color:#2a5a34;font-size:clamp(8px,1.2vw,12px);min-height:26px;overflow:hidden;text-align:center;}
+    .tile:nth-child(even){background:#001207;}
+    .tile-empty{color:#1d4025;}
+    .tile-kuni{font-family:'DotGothic16',monospace;text-shadow:0 0 4px currentColor;}
+    .tile-kuni .castle{font-size:clamp(13px,2.2vw,21px);line-height:1;filter:drop-shadow(0 0 3px rgba(0,0,0,.8));}
+    .tile-kuni .kuni-name{font-size:clamp(6px,1vw,9px);line-height:1.15;letter-spacing:0;white-space:nowrap;}
+    .tile-kuni .kuni-ch{position:absolute;top:1px;right:2px;font-size:7px;line-height:1;opacity:.95;}
+    #legend{margin-top:8px;font-size:11px;color:var(--green-dim);line-height:1.8;border:1px solid var(--green-dark);padding:6px 12px;background:var(--green-faint);text-align:left;}
+    #legend .lg-castle{margin-right:4px;}
 
     /* 大名カラー */
     .d0{color:#00ff41;} .d1{color:#ff3b3b;} .d2{color:#ffb300;}
-    .d3{color:#00e5ff;} .d4{color:#ff80ab;} .neutral{color:#444;}
-    .d-cursor{background:rgba(255,255,255,0.2);}
-    .d-sel{background:rgba(255,179,0,0.2);}
+    .d3{color:#00e5ff;} .d4{color:#ff80ab;} .neutral{color:#888;}
+    .tile.d0{background:rgba(0,255,65,.14);border-color:rgba(0,255,65,.45);}
+    .tile.d1{background:rgba(255,59,59,.14);border-color:rgba(255,59,59,.45);}
+    .tile.d2{background:rgba(255,179,0,.14);border-color:rgba(255,179,0,.45);}
+    .tile.d3{background:rgba(0,229,255,.13);border-color:rgba(0,229,255,.45);}
+    .tile.d4{background:rgba(255,128,171,.14);border-color:rgba(255,128,171,.45);}
+    .tile.neutral{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.22);}
+    .tile.tile-empty{background:#021a08;border-color:rgba(0,255,65,.07);}
+    .tile.tile-empty:nth-child(even){background:#001207;}
+    .d-cursor{outline:2px solid #fff;outline-offset:-2px;box-shadow:0 0 10px rgba(255,255,255,.75);z-index:2;}
+    .d-sel{box-shadow:0 0 12px rgba(255,179,0,.9),inset 0 0 0 2px var(--amber);border-color:var(--amber)!important;background:rgba(255,179,0,.22)!important;}
 
     /* ステータスバー */
     #statusbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center;}
@@ -46,7 +63,7 @@
     .cbtn.danger:hover{background:#ff3b3b;color:#000;}
 
     #msg{text-align:center;font-size:12px;color:var(--amber);min-height:18px;margin-bottom:6px;letter-spacing:1px;}
-    #detail{border:1px solid var(--green-dark);padding:8px 12px;background:var(--green-faint);font-size:11px;color:var(--green-dim);line-height:1.8;margin-bottom:8px;min-height:36px;}
+    #detail{border:1px solid var(--green-dark);border-left:3px solid var(--orange);padding:8px 12px;background:var(--green-faint);font-size:11px;color:var(--green-dim);line-height:1.8;margin-bottom:8px;min-height:36px;}
     #ctrl{border-top:1px solid var(--green-dark);padding-top:8px;font-size:13px;color:var(--green-dim);display:flex;justify-content:center;gap:16px;flex-wrap:wrap;}
     #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:2px 6px;color:var(--green);font-family:inherit;font-size:13px;}
   </style>
@@ -59,7 +76,7 @@
   </div>
   <div id="screen">
     <div id="hd"><h1>信長の野望</h1><div class="sub">NOBUNAGA NO YABO &mdash; SENGOKU STRATEGY</div></div>
-    <div id="map-wrap"><div id="ga">LOADING...</div></div>
+    <div id="map-wrap"><div id="ga">LOADING...</div><div id="legend"><span class="lg-castle">🏯 城 = 国（国名ラベル付き・右上は領主の頭文字）</span> <span style="color:#00ff41;">■ 織田</span> <span style="color:#ff3b3b;">■ 武田</span> <span style="color:#ffb300;">■ 上杉</span> <span style="color:#00e5ff;">■ 毛利</span> <span style="color:#ff80ab;">■ 今川</span> <span style="color:#888;">■ 中立</span> &nbsp;|&nbsp; 白枠 = カーソル / 黄色の光 = 選択中</div></div>
     <div id="msg"></div>
     <div id="detail">国を選択してください</div>
     <div id="cmdpanel">
@@ -166,15 +183,18 @@ def render_map():
         extra=''
         if cy==r and cx==c: extra=' d-cursor'
         elif sel is not None and sel==i: extra=' d-sel'
-        cells[r][c]=(ch,cls+extra)
-    lines=[]
+        name=k['name']
+        html=f'<span class="castle">🏯</span><span class="kuni-name">{name}</span><span class="kuni-ch">{ch}</span>'
+        cells[r][c]=(html,cls+extra+' tile-kuni')
+    tiles=[]
     for r in range(MAP_H):
-        line=''
         for c in range(MAP_W):
             ch,cls=cells[r][c]
-            line+=f'<span class="{cls}">{ch}</span>'
-        lines.append(line)
-    document.getElementById('ga').innerHTML='\n'.join(lines)
+            extra=''
+            if r==cy and c==cx and 'd-cursor' not in cls: extra=' d-cursor'
+            kind='' if 'tile-kuni' in cls else ' tile-empty'
+            tiles.append(f'<div class="tile{kind} {cls}{extra}">{ch}</div>')
+    document.getElementById('ga').innerHTML=''.join(tiles)
 
 def render_status():
     document.getElementById('s-year').textContent=year_str()
