@@ -39,21 +39,37 @@
       text-align:center;
     }
     #ga{
-      font-family:'Share Tech Mono',monospace;
-      font-size:clamp(20px,3.5vw,32px);
-      line-height:1.4;
-      letter-spacing:0.05em;
-      white-space:pre;  /* 絶対に折り返さない */
+      display:grid;
+      grid-template-columns:repeat(9, 44px);
+      gap:3px;
+      justify-content:center;
+      align-items:center;
+      width:100%;
+      max-width:440px;
+      margin:0 auto;
+    }
+    @media (max-width:520px){
+      #ga{grid-template-columns:repeat(9, minmax(28px, 9vw));}
+    }
+    .tile{
+      width:100%;
+      aspect-ratio:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:clamp(18px,4vw,26px);
+      line-height:1;
+      border-radius:4px;
+      user-select:none;
       overflow:hidden;
     }
-    #ga span{ display:inline; }
-    .cell-wall       { color:var(--green-dim); }
-    .cell-floor      { color:#001f07; }
-    .cell-box        { color:var(--amber); text-shadow:0 0 5px var(--amber); }
-    .cell-goal       { color:#ff6b6b; }
-    .cell-done       { color:#00ffff; text-shadow:0 0 5px #00ffff; }
-    .cell-player     { color:var(--green); text-shadow:0 0 8px var(--green); }
-    .cell-player-goal{ color:#ff6b6b; text-shadow:0 0 8px #ff6b6b; }
+    .t-wall{background:linear-gradient(135deg,#7a3d12,#5a2d0c 55%,#3d1e07);box-shadow:inset 0 0 0 1px rgba(0,0,0,.45),inset 0 -3px 0 rgba(0,0,0,.35);font-size:clamp(16px,3.5vw,24px);}
+    .t-floor{background:#020f04;box-shadow:inset 0 0 0 1px rgba(0,255,65,.06);}
+    .t-box{background:linear-gradient(135deg,#6b4420,#4a2c0d);box-shadow:inset 0 0 0 1px rgba(255,179,0,.35),0 0 6px rgba(255,179,0,.25);}
+    .t-goal{background:#1a0505;color:#ff6b6b;text-shadow:0 0 8px #ff6b6b,0 0 14px rgba(255,107,107,.6);box-shadow:inset 0 0 0 1px rgba(255,107,107,.4),0 0 8px rgba(255,107,107,.25);font-weight:bold;}
+    .t-done{background:linear-gradient(135deg,#0a3a3a,#062626);color:#00ffff;text-shadow:0 0 8px #00ffff;box-shadow:inset 0 0 0 1px rgba(0,255,255,.55),0 0 10px rgba(0,255,255,.45);}
+    .t-player{background:radial-gradient(circle at 50% 40%,rgba(0,255,65,.35),#021a06 75%);box-shadow:inset 0 0 0 1px rgba(0,255,65,.5),0 0 10px rgba(0,255,65,.45);}
+    .t-player-goal{background:radial-gradient(circle at 50% 40%,rgba(255,107,107,.4),#1a0505 75%);color:#ff6b6b;box-shadow:inset 0 0 0 1px rgba(255,107,107,.6),0 0 10px rgba(255,107,107,.5);}
 
     /* 右パネル */
     #panel{
@@ -84,7 +100,7 @@
     .sbtn.full{flex:1 0 100%;}
 
     /* クリア画面 */
-    #cs{text-align:center;padding:30px 10px;}
+    #cs{grid-column:1 / -1;text-align:center;padding:30px 10px;width:100%;}
     #cs .big{font-family:'DotGothic16',monospace;font-size:18px;color:#00ffff;text-shadow:0 0 10px #00ffff;animation:pulse 1s ease-in-out infinite;letter-spacing:3px;}
     @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
     #cs p{margin-top:10px;color:var(--green-dim);font-size:11px;}
@@ -110,7 +126,7 @@
     <div id="main">
       <!-- 左: マップ固定エリア -->
       <div id="map-wrap">
-        <div id="ga"><div style="padding:40px 20px;color:var(--green-dim);font-size:13px;letter-spacing:3px;">LOADING...</div></div>
+        <div id="ga"><div style="grid-column:1 / -1;padding:40px 20px;color:var(--green-dim);font-size:13px;letter-spacing:3px;text-align:center;">LOADING...</div></div>
       </div>
 
       <!-- 右: ステータスパネル -->
@@ -149,11 +165,12 @@
     </div>
   </div>
     <div style="margin-top:12px;border:1px solid var(--green-dark);padding:8px 12px;background:var(--green-faint);font-size:11px;color:var(--green-dim);line-height:1.8;">
-      <span style="color:var(--green);">@ </span>プレイヤー &nbsp;
-      <span style="color:var(--amber);">$ </span>箱 &nbsp;
-      <span style="color:#ff6b6b;">x </span>ゴール &nbsp;
-      <span style="color:#00ffff;">* </span>箱がゴール上<br>
-      箱を押して全ての<span style="color:#ff6b6b;">x</span>に<span style="color:var(--amber);">$</span>を乗せればクリア！
+      <span>🧑 </span>プレイヤー &nbsp;
+      <span>📦 </span>箱 &nbsp;
+      <span style="color:#ff6b6b;">◎ </span>ゴール &nbsp;
+      <span>🧱 </span>壁 &nbsp;
+      <span style="color:#00ffff;">📦✓ </span>箱がゴール上<br>
+      箱を押して全ての<span style="color:#ff6b6b;">◎</span>に<span>📦</span>を乗せればクリア！
     </div>
 </div>
 
@@ -272,7 +289,7 @@ for i in range(5):
 if not S:
     S=[{"name":"STAGE 1","map":["#####","#.  #","#   #","#@$.#","#####"]}]
 W='#';F=' ';B='$';G='.';D='*';P='@';PG='+'
-DI={W:('#','cell-wall'),F:('.','cell-floor'),B:('$','cell-box'),G:('x','cell-goal'),D:('*','cell-done'),P:('@','cell-player'),PG:('+','cell-player-goal')}
+DI={W:('🧱','t-wall'),F:('','t-floor'),B:('📦','t-box'),G:('◎','t-goal'),D:('📦','t-done'),P:('🧑','t-player'),PG:('🧑','t-player-goal')}
 st={'i':0,'g':[],'p':(0,0),'m':0,'c':False,'history':[]}
 
 def ps(i):
@@ -332,16 +349,18 @@ def rd():
   if st['c']:
     ga.innerHTML='<div id="cs"><div class="big">*** CLEAR! ***</div><p>MOVES: '+str(st['m'])+'</p><p>N で次のステージへ / P で前のステージへ</p></div>'
     return
-  # 各行を固定幅でレンダリング - rowをそのままループしてspanを並べる
-  lines=[]
+  # タイル描画: 行長に合わせたグリッドに div.tile を並べる
+  try:
+    ga.style.gridTemplateColumns=f"repeat({len(g[0]) if g else 9}, min(44px, 9vw))"
+  except Exception:
+    pass
+  tiles=[]
   for row in g:
-    line=''
     for ch in row:
       if ch==' ':ch=F
-      s,cl=DI.get(ch,(ch,'cell-floor'))
-      line+=f'<span class="{cl}">{s}</span>'
-    lines.append(line)
-  ga.innerHTML='\n'.join(lines)
+      s,cl=DI.get(ch,(ch,'t-floor'))
+      tiles.append(f'<div class="tile {cl}">{s}</div>')
+  ga.innerHTML=''.join(tiles)
 
 def ok(e):
   k=e.key
