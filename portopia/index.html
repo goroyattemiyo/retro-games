@@ -2,38 +2,296 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>ポートピア - RETRO GAME CENTER</title>
+  <title>ポートピア - PORTOPIA</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
   <style>
-    :root{--c:#a5d6a7;--bg:#000d02;--gd:#003f0f;--gm:#00aa2a;--sl:rgba(0,255,65,.025);}
+    :root{--green:#00ff41;--green-dim:#00aa2a;--green-dark:#003f0f;--green-faint:#001a06;--amber:#ffb300;--cyan:#00e5ff;--bg:#000d02;--sl:rgba(0,255,65,.03);}
     *{margin:0;padding:0;box-sizing:border-box;}
-    body{background:var(--bg);color:var(--c);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+    body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0;}
     body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
     body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
-    #box{width:min(560px,95vw);border:2px solid var(--gm);background:#000;}
-    #tb{background:var(--gd);border-bottom:1px solid var(--gm);padding:4px 12px;display:flex;justify-content:space-between;font-size:11px;color:var(--gm);letter-spacing:2px;}
-    #tb a{color:var(--gm);text-decoration:none;} #tb a:hover{color:#00ff41;}
-    #bd{padding:40px 30px;text-align:center;}
-    h1{font-family:'DotGothic16',monospace;font-size:clamp(24px,6vw,40px);color:var(--c);text-shadow:0 0 12px var(--c);letter-spacing:6px;margin-bottom:8px;}
-    .ge{font-size:11px;color:var(--gm);letter-spacing:4px;margin-bottom:32px;}
-    .wip{border:1px solid var(--c);padding:16px 32px;display:inline-block;margin-bottom:32px;opacity:.6;}
-    .wip span{font-size:18px;color:var(--c);letter-spacing:4px;}
-    .msg{font-size:12px;color:var(--gm);line-height:1.9;}
-    a.back{display:inline-block;margin-top:24px;color:var(--gm);font-size:12px;text-decoration:none;border:1px solid var(--gd);padding:6px 16px;letter-spacing:2px;}
-    a.back:hover{color:#00ff41;border-color:var(--gm);}
+    #terminal{width:min(1100px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(0,255,65,.2);background:var(--bg);}
+    #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
+    #tb a{color:var(--green-dim);text-decoration:none;} #tb a:hover{color:var(--green);}
     .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+    #screen{padding:16px;}
+    #hd{text-align:center;margin-bottom:12px;border-bottom:1px solid var(--green-dark);padding-bottom:10px;}
+    #hd h1{font-family:'DotGothic16',monospace;font-size:26px;text-shadow:0 0 10px #a5d6a7;letter-spacing:8px;color:#a5d6a7;}
+    #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
+    #locbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center;}
+    .stat-block{display:flex;align-items:center;gap:6px;border:1px solid var(--green-dark);background:var(--green-faint);padding:4px 10px;}
+    .stat-label{font-size:10px;color:var(--green-dark);letter-spacing:2px;white-space:nowrap;}
+    .stat-value{font-size:14px;color:var(--green);}
+    .stat-value.amber{color:var(--amber);}
+    #scene-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:12px;text-align:center;margin-bottom:8px;}
+    #scene{display:grid;grid-template-columns:repeat(5,min(64px,16vw));gap:4px;justify-content:center;margin:0 auto;}
+    .tile{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(22px,5vw,34px);border-radius:4px;background:#021a06;box-shadow:inset 0 0 0 1px rgba(0,255,65,.08);}
+    .sc-office .tile{background:linear-gradient(135deg,#122912,#071507);}
+    .sc-harbor .tile{background:linear-gradient(135deg,#062a3a,#04141f);}
+    .sc-warehouse .tile{background:linear-gradient(135deg,#2a1e08,#171006);}
+    .sc-cafe .tile{background:linear-gradient(135deg,#2a1626,#160812);}
+    .sc-clear .tile{background:linear-gradient(135deg,#0a3a3a,#062626);}
+    #msg{border:1px solid var(--green-dark);background:var(--green-faint);padding:12px 14px;font-size:13px;line-height:1.9;color:#c8f5d0;min-height:118px;margin-bottom:8px;white-space:pre-wrap;}
+    #inv{border:1px solid var(--green-dark);padding:6px 12px;font-size:11px;color:var(--green-dim);line-height:1.8;margin-bottom:8px;background:#000;}
+    #inv b{color:var(--amber);font-weight:normal;}
+    #cmds{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+    .cbtn{background:var(--green-dark);border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:13px;padding:7px 14px;cursor:pointer;letter-spacing:1px;transition:all .1s;}
+    .cbtn:hover,.cbtn.active{background:var(--green-dim);color:var(--bg);}
+    .cbtn.accuse{border-color:var(--amber);color:var(--amber);}
+    .cbtn.accuse:hover,.cbtn.accuse.active{background:var(--amber);color:#000;}
+    #targets{display:flex;gap:6px;flex-wrap:wrap;min-height:38px;margin-bottom:4px;}
+    .tbtn{background:#000;border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 12px;cursor:pointer;letter-spacing:1px;}
+    .tbtn:hover{background:var(--green-dark);}
+    #ctrl{border-top:1px solid var(--green-dark);padding-top:8px;font-size:12px;color:var(--green-dim);display:flex;justify-content:center;gap:16px;flex-wrap:wrap;}
+    #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:2px 6px;color:var(--green);font-family:inherit;font-size:12px;}
   </style>
 </head>
 <body>
-<div id="box">
-  <div id="tb"><span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; PORTOPIA.EXE</span><span class="blink">■</span><span>PC-9801</span></div>
-  <div id="bd">
-    <h1>ポートピア</h1>
-    <div class="ge">ADVENTURE / MYSTERY</div>
-    <div class="wip"><span>-- UNDER CONSTRUCTION --</span></div>
-    <div class="msg">このゲームは現在開発中です。<br>しばらくお待ちください。<br><br><span class="blink">█</span></div>
-    <a class="back" href="../index.html">◀ MENU に戻る</a>
+<div id="terminal">
+  <div id="tb">
+    <span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; PORTOPIA.EXE ver 1.00</span>
+    <span class="blink">■</span><span>PC-9801</span>
+  </div>
+  <div id="screen">
+    <div id="hd"><h1>ポートピア</h1><div class="sub">PORTOPIA &mdash; ORIGINAL MYSTERY ADV / 消えた青いトランク事件</div></div>
+    <div id="locbar">
+      <div class="stat-block"><div class="stat-label">場所</div><div class="stat-value" id="s-loc">潮見探偵事務所</div></div>
+      <div class="stat-block"><div class="stat-label">手がかり</div><div class="stat-value amber" id="s-clue">0 / 3</div></div>
+      <div class="stat-block"><div class="stat-label">状態</div><div class="stat-value" id="s-state">捜査中</div></div>
+    </div>
+    <div id="scene-wrap"><div id="scene" class="sc-office">LOADING...</div></div>
+    <div id="msg">読み込み中...</div>
+    <div id="inv">持ち物： なし</div>
+    <div id="cmds">
+      <button class="cbtn" id="c-examine">調べる</button>
+      <button class="cbtn" id="c-talk">聞く</button>
+      <button class="cbtn" id="c-move">移動</button>
+      <button class="cbtn" id="c-item">アイテム</button>
+      <button class="cbtn accuse" id="c-accuse">推理する</button>
+      <button class="cbtn" id="c-reset">最初から</button>
+    </div>
+    <div id="targets"></div>
+    <div id="ctrl">
+      <span>ボタンだけで最後まで遊べます</span>
+      <span>調べる・聞く で手がかりを3つ集めよう</span>
+      <span>集まったら 推理する</span>
+    </div>
+    <div style="margin-top:10px;border:1px solid var(--green-dark);padding:8px 12px;background:var(--green-faint);font-size:11px;color:var(--green-dim);line-height:1.8;">
+      ※ 本作はオリジナルの短編ミステリーです。港町・汐港で、倉庫から青いトランクが消えた。犯人は身近な3人の中にいる。
+    </div>
   </div>
 </div>
+<script type="py">
+from pyscript import document
+from pyodide.ffi import create_proxy
+LOCS = {
+    'office': {
+        'name': '潮見探偵事務所', 'cls': 'sc-office',
+        'tiles': ['🪟', '🗄️', '🕰️', '📚', '🪑', '🖥️', '📞', '🗺️', '🚪', '🪴'],
+        'desc': '潮見探偵事務所。依頼人は港の運送会社だ。\n「昨夜、3号倉庫から青いトランクが消えた。中には試作の航海用精密時計が入っていた」\nまずは倉庫・港・喫茶を回って、手がかりを3つ集めよう。',
+        'examine': ['机', '電話メモ'],
+        'talk': [],
+    },
+    'harbor': {
+        'name': '汐港・第2埠頭', 'cls': 'sc-harbor',
+        'tiles': ['🌊', '🚢', '🌊', '⚓', '🛥️', '🦀', '📦', '🏗️', '🌅', '🪢'],
+        'desc': '汐港・第2埠頭。潮の匂いと船の汽笛。\n小舟が何艘か係留されている。荷役リーダーのカイタニが荷物の積み替えを見ている。',
+        'examine': ['埠頭', '小舟'],
+        'talk': ['カイタニ'],
+    },
+    'warehouse': {
+        'name': '港の倉庫・3号棟', 'cls': 'sc-warehouse',
+        'tiles': ['📦', '📦', '🔦', '🪢', '📦', '🚪', '🧰', '🔐', '📦', '🗝️'],
+        'desc': '港の倉庫・3号棟。トランクがあった棚だけ、ぽっかり空いている。\n鍵は壊されていない。管理人のモリタが奥で帳簿をつけている。',
+        'examine': ['棚', '床', 'ドア'],
+        'talk': ['モリタ'],
+    },
+    'cafe': {
+        'name': '喫茶「波止場」', 'cls': 'sc-cafe',
+        'tiles': ['☕', '🪟', '🌿', '🍰', '🪑', '☕', '🎵', '🖼️', '🚪', '🧾'],
+        'desc': '喫茶「波止場」。倉庫から歩いて2分の、港の人たちの休憩所だ。\n店主のユリがカウンターでカップを磨いている。昨夜も店を開けていたという。',
+        'examine': ['カウンター', '窓際の席'],
+        'talk': ['ユリ'],
+    },
+}
+CLUE_INFO = {
+    'rope': {'name': '青い塗料のついたロープ片', 'desc': 'ロープ片には小舟の船体と同じ青い塗料が付いている。トランクは陸ではなく、海側へ運ばれたらしい。'},
+    'receipt': {'name': '23時の伝票', 'desc': '喫茶「波止場」の伝票。昨夜23時、モリタがコーヒーを買った記録だ。「家にいた」という証言と食い違う。'},
+    'memo': {'name': '小舟の貸出メモ', 'desc': '昨夜22時、モリタ名義で小舟が1艘貸し出され、未明に戻された記録。行き先は書かれていない。'},
+}
+st = {'loc': 'office', 'cmd': 'examine', 'inv': [], 'msg': '', 'cleared': False, 'proxies': []}
+st['msg'] = LOCS['office']['desc']
+
+def clue_count():
+    return len(st['inv'])
+
+def add_clue(key, text):
+    if key not in st['inv']:
+        st['inv'].append(key)
+        return text + '\n\n★ 手がかりを手に入れた：『' + CLUE_INFO[key]['name'] + '』 (' + str(clue_count()) + '/3)'
+    return text
+
+def rd():
+    loc = LOCS[st['loc']]
+    document.getElementById('s-loc').textContent = '事件解決！' if st['cleared'] else loc['name']
+    document.getElementById('s-clue').textContent = str(clue_count()) + ' / 3'
+    document.getElementById('s-state').textContent = 'CLEAR' if st['cleared'] else ('推理可能！' if clue_count() >= 3 else '捜査中')
+    scene = document.getElementById('scene')
+    scene.className = 'sc-clear' if st['cleared'] else loc['cls']
+    tiles = ['🎉', '⚖️', '🎉', '🔍', '🏆', '🎉', '📦', '🎉', '⚖️', '🎉'] if st['cleared'] else loc['tiles']
+    scene.innerHTML = ''.join('<div class="tile">' + t + '</div>' for t in tiles)
+    document.getElementById('msg').textContent = st['msg']
+    inv = document.getElementById('inv')
+    if st['inv']:
+        inv.innerHTML = '🎒 持ち物： ' + ' ／ '.join('<b>' + CLUE_INFO[k]['name'] + '</b>' for k in st['inv'])
+    else:
+        inv.textContent = '🎒 持ち物： なし'
+    for cid, cmd in [('c-examine', 'examine'), ('c-talk', 'talk'), ('c-move', 'move'), ('c-item', 'item'), ('c-accuse', 'accuse')]:
+        el = document.getElementById(cid)
+        if el:
+            if st['cmd'] == cmd:
+                el.className = 'cbtn accuse active' if cmd == 'accuse' else 'cbtn active'
+            else:
+                el.className = 'cbtn accuse' if cmd == 'accuse' else 'cbtn'
+    render_targets()
+
+def render_targets():
+    box = document.getElementById('targets')
+    box.innerHTML = ''
+    if st['cleared']:
+        items = [('もう一度遊ぶ', ('reset', ''))]
+    elif st['cmd'] == 'move':
+        items = [(LOCS[k]['name'], ('move', k)) for k in ['office', 'harbor', 'warehouse', 'cafe'] if k != st['loc']]
+    elif st['cmd'] == 'examine':
+        items = [(t, ('examine', t)) for t in LOCS[st['loc']]['examine']]
+    elif st['cmd'] == 'talk':
+        ts = LOCS[st['loc']]['talk']
+        items = [(t + 'に聞く', ('talk', t)) for t in ts] if ts else [('（ここには聞ける人がいない）', ('none', ''))]
+    elif st['cmd'] == 'item':
+        items = [(CLUE_INFO[k]['name'], ('item', k)) for k in st['inv']] if st['inv'] else [('（持ち物はまだない）', ('none', ''))]
+    elif st['cmd'] == 'accuse':
+        if clue_count() >= 3:
+            items = [('犯人はカイタニだ', ('accuse', 'カイタニ')), ('犯人はユリだ', ('accuse', 'ユリ')), ('犯人はモリタだ', ('accuse', 'モリタ'))]
+        else:
+            items = [('手がかりが足りない (' + str(clue_count()) + '/3)', ('none', ''))]
+    else:
+        items = []
+    for label, action in items:
+        btn = document.createElement('button')
+        btn.textContent = label
+        btn.className = 'tbtn'
+        def make(a):
+            def handler(e):
+                do_action(a)
+            p = create_proxy(handler)
+            st['proxies'].append(p)
+            return p
+        btn.addEventListener('click', make(action))
+        box.appendChild(btn)
+
+def set_msg(text):
+    st['msg'] = text
+    rd()
+def do_examine(target):
+    loc = st['loc']
+    if loc == 'office' and target == '机':
+        set_msg('机の上に依頼書と港の見取り図がある。\nトランクは「鍵のかかる3号倉庫」に保管されていた。鍵を壊した形跡がないなら、犯人は鍵を持つ身近な人間かもしれない。')
+    elif loc == 'office' and target == '電話メモ':
+        set_msg('電話メモ：「喫茶・波止場のユリさんより。昨夜のことで話したいことがある」\n喫茶へ行けば、昨夜の様子が聞けそうだ。')
+    elif loc == 'harbor' and target == '埠頭':
+        set_msg('埠頭には新しい擦り傷がある。重いものを引きずった跡だ。\n陸側の道路ではなく、海側へ向かっている。')
+    elif loc == 'harbor' and target == '小舟':
+        if 'rope' in st['inv']:
+            set_msg('小舟のへりに、ロープ片と全く同じ青い塗料が付いている。\nこの小舟でトランクを運んだ可能性が高い。貸出の記録を確かめよう。カイタニに聞くといい。')
+        else:
+            set_msg('小舟のへりには青い塗料と、擦れたロープの跡がある。\n倉庫にも似た跡がないか、確かめてみたい。')
+    elif loc == 'warehouse' and target == '棚':
+        text = 'トランクがあった棚の下に、切れたロープの端が落ちていた。\nロープには鮮やかな青い塗料がべっとり付いている。これは船の塗料の色だ。'
+        set_msg(add_clue('rope', text))
+    elif loc == 'warehouse' and target == '床':
+        set_msg('床には濡れた足跡が海側の出口まで続いている。\n雨も降っていないのに濡れている――海から来て、海へ帰った者の足跡だ。')
+    elif loc == 'warehouse' and target == 'ドア':
+        set_msg('ドアの鍵は壊されていない。合鍵か、正規の鍵で開けられている。\n鍵を持っているのは、倉庫管理人のモリタだけだという。')
+    elif loc == 'cafe' and target == 'カウンター':
+        set_msg('カウンターには昨夜の伝票が束になって残っている。\n気になる伝票があれば、ユリに聞いてみよう。')
+    elif loc == 'cafe' and target == '窓際の席':
+        set_msg('窓際の席からは倉庫の海側出口がよく見える。\n昨夜ここに座っていた人は、倉庫の異変を見たかもしれない。')
+    else:
+        set_msg('特に変わったところはない。')
+
+def do_talk(target):
+    if target == 'カイタニ':
+        text = 'カイタニ「昨夜の小舟か？ 22時にモリタが借りていったよ。釣り具を運ぶと言ってたが、手ぶらだったな。未明に戻ってきたとき、船底がやけに重そうだった」\nそう言って、貸出メモの控えを渡してくれた。'
+        set_msg(add_clue('memo', text))
+    elif target == 'ユリ':
+        text = 'ユリ「モリタさん、昨夜23時にうちでコーヒーを買ったわよ。倉庫に近いのに今から帰ると慌ててた。なのに今日はずっと家にいたなんて言うから、おかしいと思って電話したの」\nユリは証拠に、昨夜の伝票を渡してくれた。'
+        set_msg(add_clue('receipt', text))
+    elif target == 'モリタ':
+        if clue_count() >= 3:
+            set_msg('モリタ「……何の用だ。私は昨夜、家にいたと言ったはずだ」\n彼の視線が泳いでいる。手がかりは揃った。推理するから犯人を指摘しよう。')
+        else:
+            set_msg('モリタ「昨夜はずっと家にいました。鍵は私しか持っていませんが、私が盗むはずないでしょう」\n少し落ち着かない様子だ。証拠を集めてから、もう一度話そう。')
+    else:
+        set_msg('特に話は聞けなかった。')
+
+def do_action(action):
+    kind, target = action
+    if kind == 'none':
+        if st['cmd'] == 'accuse' and clue_count() < 3:
+            set_msg('まだ犯人を指摘できない。手がかりは ' + str(clue_count()) + '/3。\n倉庫の棚、喫茶のユリ、港のカイタニを当たってみよう。')
+        return
+    if kind == 'reset':
+        st['loc'] = 'office'
+        st['inv'] = []
+        st['cleared'] = False
+        st['cmd'] = 'examine'
+        st['msg'] = LOCS['office']['desc']
+        rd()
+        return
+    if st['cleared']:
+        return
+    if kind == 'move':
+        st['loc'] = target
+        st['cmd'] = 'examine'
+        st['msg'] = LOCS[target]['desc']
+        rd()
+    elif kind == 'examine':
+        do_examine(target)
+    elif kind == 'talk':
+        do_talk(target)
+    elif kind == 'item':
+        info = CLUE_INFO[target]
+        set_msg('【' + info['name'] + '】\n' + info['desc'])
+    elif kind == 'accuse':
+        if target == 'モリタ':
+            st['cleared'] = True
+            st['msg'] = '*** 事件解決 ***\n\n「モリタ、あなたは鍵で倉庫を開け、トランクを小舟で運んだ。ロープの青い塗料、23時の伝票、小舟の貸出メモ――3つともあなたを指している」\nモリタは肩を落とした。トランクは彼の小舟の船底から見つかり、精密時計も無事だった。\n\nCLEAR! おつかれさまでした。汐港の夜明けは、今日も穏やかだ。'
+            rd()
+        else:
+            set_msg('「' + target + '」を指摘したが、3つの手がかりはその人を犯人だと示していない。\n証拠のつながりをよく考えて、もう一度推理するから選び直そう。（何度でもやり直せます）')
+            st['cmd'] = 'accuse'
+            rd()
+
+def on_cmd(cmd):
+    def handler(e):
+        if cmd == 'reset':
+            do_action(('reset', ''))
+            return
+        st['cmd'] = cmd
+        rd()
+    p = create_proxy(handler)
+    st['proxies'].append(p)
+    return p
+
+document.getElementById('c-examine').addEventListener('click', on_cmd('examine'))
+document.getElementById('c-talk').addEventListener('click', on_cmd('talk'))
+document.getElementById('c-move').addEventListener('click', on_cmd('move'))
+document.getElementById('c-item').addEventListener('click', on_cmd('item'))
+document.getElementById('c-accuse').addEventListener('click', on_cmd('accuse'))
+document.getElementById('c-reset').addEventListener('click', on_cmd('reset'))
+rd()
+</script>
 </body>
 </html>
