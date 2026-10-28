@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>マインスイーパー - MINESWEEPER</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
+  <style>
+    :root{--green:#00ff41;--green-dim:#00aa2a;--green-dark:#003f0f;--green-faint:#001a06;--amber:#ffb300;--cyan:#00e5ff;--red:#ff3b3b;--bg:#000d02;--sl:rgba(0,255,65,.03);}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--sl) 2px,var(--sl) 4px);pointer-events:none;z-index:100;}
+    body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:99;}
+    #terminal{width:min(1100px,98vw);border:2px solid var(--green-dim);box-shadow:0 0 30px rgba(0,255,65,.2);background:var(--bg);}
+    #tb{background:var(--green-dark);border-bottom:1px solid var(--green-dim);padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--green-dim);letter-spacing:2px;}
+    #tb a{color:var(--green-dim);text-decoration:none;} #tb a:hover{color:var(--green);}
+    .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+    #screen{padding:16px;}
+    #hd{text-align:center;margin-bottom:14px;border-bottom:1px solid var(--green-dark);padding-bottom:10px;}
+    #hd h1{font-family:'DotGothic16',monospace;font-size:26px;text-shadow:0 0 10px var(--green);letter-spacing:8px;}
+    #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
+    #main{display:flex;flex-direction:column;gap:10px;align-items:center;}
+    #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:12px;text-align:center;}
+    #ga{display:grid;grid-template-columns:repeat(10,44px);gap:3px;justify-content:center;align-items:center;width:100%;max-width:470px;margin:0 auto;}
+    @media (max-width:520px){#ga{grid-template-columns:repeat(10,minmax(28px,9vw));}}
+    .tile{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:clamp(16px,4vw,24px);font-weight:bold;line-height:1;border-radius:4px;user-select:none;overflow:hidden;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;}
+    button.tile{border:0;appearance:none;}
+    .t-closed{background:linear-gradient(135deg,#06551a,#043d12 55%,#022a0a);box-shadow:inset 0 0 0 1px rgba(0,255,65,.45),inset 0 -3px 0 rgba(0,0,0,.4),0 0 4px rgba(0,255,65,.15);color:transparent;}
+    .t-closed:hover{filter:brightness(1.5);}
+    .t-open{background:#020f04;box-shadow:inset 0 0 0 1px rgba(0,255,65,.08);cursor:default;}
+    .t-flag{background:linear-gradient(135deg,#06551a,#043d12 55%,#022a0a);box-shadow:inset 0 0 0 1px rgba(255,179,0,.5),0 0 6px rgba(255,179,0,.25);font-size:clamp(14px,3.5vw,20px);}
+    .t-mine{background:radial-gradient(circle at 50% 40%,rgba(255,59,59,.55),#2a0505 78%);box-shadow:inset 0 0 0 1px rgba(255,59,59,.65),0 0 10px rgba(255,59,59,.5);font-size:clamp(14px,3.5vw,20px);}
+    .t-mine-hit{background:#ff3b3b;box-shadow:0 0 14px rgba(255,59,59,.8);font-size:clamp(14px,3.5vw,20px);}
+    .t-clear{background:#020f04;box-shadow:inset 0 0 0 1px rgba(0,255,255,.35);}
+    .n1{color:#00e5ff;text-shadow:0 0 6px #00e5ff;} .n2{color:#00ff41;text-shadow:0 0 6px #00ff41;}
+    .n3{color:#ffb300;text-shadow:0 0 6px #ffb300;} .n4{color:#ff80ab;text-shadow:0 0 6px #ff80ab;}
+    .n5{color:#ff6b35;text-shadow:0 0 6px #ff6b35;} .n6{color:#b388ff;text-shadow:0 0 6px #b388ff;}
+    .n7{color:#ffffff;text-shadow:0 0 6px #ffffff;} .n8{color:#ff3b3b;text-shadow:0 0 6px #ff3b3b;}
+    #panel{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;}
+    .panel-block{display:flex;align-items:center;gap:8px;border:1px solid var(--green-dark);background:var(--green-faint);padding:4px 10px;}
+    .panel-label{font-size:10px;color:var(--green-dark);letter-spacing:2px;white-space:nowrap;}
+    .panel-value{font-size:16px;color:var(--green);text-shadow:0 0 6px rgba(0,255,65,.3);min-width:2em;text-align:center;}
+    .panel-value.amber{color:var(--amber);} .panel-value.cyan{color:var(--cyan);}
+    #msg{font-size:12px;color:var(--amber);min-height:18px;letter-spacing:1px;text-align:center;}
+    #banner{display:none;text-align:center;padding:10px;font-family:'DotGothic16',monospace;font-size:18px;letter-spacing:3px;width:100%;}
+    #banner.clear{display:block;color:#00ffff;text-shadow:0 0 10px #00ffff;animation:pulse 1s ease-in-out infinite;border:1px solid rgba(0,255,255,.4);background:rgba(0,255,255,.05);}
+    #banner.over{display:block;color:#ff3b3b;text-shadow:0 0 10px #ff3b3b;border:1px solid rgba(255,59,59,.4);background:rgba(255,59,59,.06);}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+    .btn-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+    .sbtn{background:var(--green-dark);border:1px solid var(--green-dim);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 14px;cursor:pointer;letter-spacing:1px;transition:all .1s;text-align:center;}
+    .sbtn:hover{background:var(--green-dim);color:var(--bg);}
+    .sbtn.active{background:var(--amber);border-color:var(--amber);color:#000;box-shadow:0 0 10px rgba(255,179,0,.5);}
+    #ctrl{margin-top:10px;border-top:1px solid var(--green-dark);padding-top:8px;font-size:13px;color:var(--green-dim);display:flex;justify-content:center;gap:20px;flex-wrap:wrap;}
+    #ctrl kbd{background:var(--green-dark);border:1px solid var(--green-dim);padding:2px 6px;color:var(--green);font-family:inherit;font-size:13px;}
+  </style>
+</head>
+<body>
+<div id="terminal">
+  <div id="tb">
+    <span><a href="../index.html">◀ MENU</a> &nbsp;|&nbsp; MINESWEEPER.EXE ver 1.00</span>
+    <span class="blink">■</span>
+    <span>PC-9801</span>
+  </div>
+  <div id="screen">
+    <div id="hd">
+      <h1>マインスイーパー</h1>
+      <div class="sub">MINESWEEPER &mdash; MINE SWEEPER</div>
+    </div>
+    <div id="main">
+      <div id="map-wrap">
+        <div id="ga"><div style="grid-column:1 / -1;padding:40px 20px;color:var(--green-dim);font-size:13px;letter-spacing:3px;text-align:center;">LOADING...</div></div>
+      </div>
+      <div id="msg">読み込み中…</div>
+      <div id="banner"></div>
+      <div id="panel">
+        <div class="panel-block"><div class="panel-label">地雷 残り</div><div class="panel-value amber" id="s-mines">15</div></div>
+        <div class="panel-block"><div class="panel-label">開いた数</div><div class="panel-value cyan" id="s-opened">0 / 85</div></div>
+        <div class="panel-block"><div class="panel-label">手数 STEPS</div><div class="panel-value" id="s-steps">0</div></div>
+        <div class="panel-block"><div class="panel-label">モード</div><div class="panel-value" id="s-mode">開く</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="sbtn" id="bf">🚩 旗モード OFF (F)</button>
+        <button class="sbtn" id="br">↻ 最初から (R)</button>
+      </div>
+    </div>
+    <div id="ctrl">
+      <span><kbd>クリック / タップ</kbd> 開く</span>
+      <span><kbd>F</kbd> 旗モード切替</span>
+      <span><kbd>R</kbd> やり直し</span>
+      <span>数字＝周りの地雷の数</span>
+    </div>
+    <div style="margin-top:12px;border:1px solid var(--green-dark);padding:8px 12px;background:var(--green-faint);font-size:11px;color:var(--green-dim);line-height:1.8;">
+      10×10マスに地雷が15個。最初のクリックでは絶対に地雷を踏みません。怪しいマスは旗モードで 🚩 を立てて、地雷以外の85マスを全部開けばクリア！
+    </div>
+  </div>
+</div>
+
+<script type="py">
+from pyscript import document
+from pyodide.ffi import create_proxy
+import random
+
+SIZE = 10
+MINES = 15
+TOTAL = SIZE * SIZE
+TOTAL_SAFE = TOTAL - MINES
+
+st = {
+    'mines': None,      # set of (r,c) or None until first click
+    'adj': {},          # (r,c) -> adjacent mine count
+    'opened': set(),
+    'flagged': set(),
+    'steps': 0,
+    'over': False,
+    'clear': False,
+    'flag_mode': False,
+    'hit': None,
+    'started': False,
+}
+
+_tiles = []       # button elements, index = r*SIZE+c
+_proxies = []     # keep-alive for create_proxy objects
+
+def neighbors(r, c):
+    out = []
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            if dr == 0 and dc == 0:
+                continue
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < SIZE and 0 <= nc < SIZE:
+                out.append((nr, nc))
+    return out
+
+def gen_mines(fr, fc):
+    cells = [(r, c) for r in range(SIZE) for c in range(SIZE) if not (r == fr and c == fc)]
+    mines = set(random.sample(cells, MINES))
+    adj = {}
+    for r in range(SIZE):
+        for c in range(SIZE):
+            adj[(r, c)] = sum(1 for nb in neighbors(r, c) if nb in mines)
+    st['mines'] = mines
+    st['adj'] = adj
+
+def set_msg(t):
+    document.getElementById('msg').textContent = t
+
+def toggle_flag(r, c):
+    if st['over'] or st['clear']:
+        return
+    if (r, c) in st['opened']:
+        return
+    st['steps'] += 1
+    if (r, c) in st['flagged']:
+        st['flagged'].discard((r, c))
+        set_msg('旗を取りました')
+    else:
+        st['flagged'].add((r, c))
+        set_msg('🚩 旗を立てました')
+    rd()
+
+def open_cell(r, c):
+    if st['over'] or st['clear']:
+        return
+    if (r, c) in st['flagged'] or (r, c) in st['opened']:
+        return
+    if not st['started']:
+        gen_mines(r, c)
+        st['started'] = True
+    st['steps'] += 1
+    if (r, c) in st['mines']:
+        st['over'] = True
+        st['hit'] = (r, c)
+        set_msg('💣 地雷を踏んだ！ ゲームオーバー')
+        rd()
+        return
+    # Flood fill for zero cells
+    stack = [(r, c)]
+    while stack:
+        cur = stack.pop()
+        if cur in st['opened'] or cur in st['flagged']:
+            continue
+        st['opened'].add(cur)
+        if st['adj'].get(cur, 0) == 0:
+            for nb in neighbors(cur[0], cur[1]):
+                if nb not in st['opened'] and nb not in st['mines']:
+                    stack.append(nb)
+    if len(st['opened']) >= TOTAL_SAFE:
+        st['clear'] = True
+        set_msg(f"クリア！ 手数 {st['steps']} 手で地雷を全て回避しました")
+    else:
+        set_msg(f"開いた数 {len(st['opened'])} / {TOTAL_SAFE}　残りの地雷に気をつけて")
+    rd()
+
+def on_tile(r, c):
+    if st['flag_mode']:
+        toggle_flag(r, c)
+    else:
+        open_cell(r, c)
+
+def build_grid():
+    ga = document.getElementById('ga')
+    ga.innerHTML = ''
+    _tiles.clear()
+    for r in range(SIZE):
+        for c in range(SIZE):
+            btn = document.createElement('button')
+            btn.className = 'tile t-closed'
+            btn.textContent = ''
+            # closure with default args to capture r,c correctly
+            def make_handler(rr, cc):
+                def handler(e):
+                    on_tile(rr, cc)
+                return handler
+            proxy = create_proxy(make_handler(r, c))
+            _proxies.append(proxy)
+            btn.addEventListener('click', proxy)
+            ga.appendChild(btn)
+            _tiles.append(btn)
+
+def rd():
+    remain = MINES - len(st['flagged'])
+    document.getElementById('s-mines').textContent = str(remain)
+    document.getElementById('s-opened').textContent = f"{len(st['opened'])} / {TOTAL_SAFE}"
+    document.getElementById('s-steps').textContent = str(st['steps'])
+    document.getElementById('s-mode').textContent = '🚩 旗' if st['flag_mode'] else '開く'
+    bf = document.getElementById('bf')
+    bf.textContent = '🚩 旗モード ON (F)' if st['flag_mode'] else '🚩 旗モード OFF (F)'
+    if st['flag_mode']:
+        bf.classList.add('active')
+    else:
+        bf.classList.remove('active')
+    banner = document.getElementById('banner')
+    if st['clear']:
+        banner.className = 'clear'
+        banner.textContent = f"*** CLEAR! ***  手数: {st['steps']}"
+    elif st['over']:
+        banner.className = 'over'
+        banner.textContent = '*** GAME OVER ***  R で再挑戦'
+    else:
+        banner.className = ''
+        banner.textContent = ''
+    reveal = st['over'] or st['clear']
+    for r in range(SIZE):
+        for c in range(SIZE):
+            btn = _tiles[r * SIZE + c]
+            pos = (r, c)
+            if reveal and st['mines'] and pos in st['mines']:
+                if pos == st['hit']:
+                    btn.className = 'tile t-mine-hit'
+                elif pos in st['flagged']:
+                    btn.className = 'tile t-flag'
+                else:
+                    btn.className = 'tile t-mine'
+                btn.textContent = '💣' if pos not in st['flagged'] else '🚩'
+                continue
+            if pos in st['opened']:
+                n = st['adj'].get(pos, 0) if st['adj'] else 0
+                btn.className = 'tile t-open' + (f' n{n}' if n > 0 else '')
+                btn.textContent = str(n) if n > 0 else ''
+            elif pos in st['flagged']:
+                btn.className = 'tile t-flag'
+                btn.textContent = '🚩'
+            else:
+                btn.className = 'tile t-closed'
+                btn.textContent = ''
+
+def reset():
+    st['mines'] = None
+    st['adj'] = {}
+    st['opened'] = set()
+    st['flagged'] = set()
+    st['steps'] = 0
+    st['over'] = False
+    st['clear'] = False
+    st['hit'] = None
+    st['started'] = False
+    # flag_mode is kept across restarts for convenience
+    set_msg('マスをクリックして開始 ― 最初のクリックは安全です')
+    rd()
+
+def toggle_flag_mode():
+    st['flag_mode'] = not st['flag_mode']
+    set_msg('🚩 旗モード ON ― クリックで旗を立てます' if st['flag_mode'] else '開くモード ― クリックでマスを開きます')
+    rd()
+
+def on_flag_btn(e):
+    toggle_flag_mode()
+
+def on_restart(e):
+    reset()
+
+def on_key(e):
+    k = e.key
+    if k in ('f', 'F'):
+        toggle_flag_mode()
+        e.preventDefault()
+    elif k in ('r', 'R'):
+        reset()
+        e.preventDefault()
+
+document.addEventListener('keydown', create_proxy(on_key))
+document.getElementById('bf').addEventListener('click', create_proxy(on_flag_btn))
+document.getElementById('br').addEventListener('click', create_proxy(on_restart))
+build_grid()
+reset()
+</script>
+</body>
+</html>
