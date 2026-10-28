@@ -20,20 +20,32 @@
     #hd{text-align:center;margin-bottom:12px;border-bottom:1px solid var(--green-dark);padding-bottom:10px;}
     #hd h1{font-family:'DotGothic16',monospace;font-size:26px;text-shadow:0 0 10px var(--cyan);letter-spacing:8px;color:var(--cyan);}
     #hd .sub{font-size:11px;color:var(--green-dim);letter-spacing:4px;margin-top:3px;}
-    #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:10px;text-align:center;margin-bottom:8px;}
-    #ga{font-family:'Share Tech Mono',monospace;font-size:clamp(16px,2.8vw,26px);line-height:1.4;letter-spacing:0.05em;white-space:pre;display:inline-block;cursor:default;}
-    #ga span{display:inline;}
-    .c-sea  {color:#003366;}
-    .c-land {color:#002208;}
-    .c-mtn  {color:#444;}
-    .c-city {color:#888;}
-    .c-p0   {color:#00ff41;text-shadow:0 0 4px #00ff41;}
-    .c-p1   {color:#ff3b3b;text-shadow:0 0 4px #ff3b3b;}
-    .c-p2   {color:#ffb300;text-shadow:0 0 4px #ffb300;}
-    .c-p3   {color:#00e5ff;text-shadow:0 0 4px #00e5ff;}
-    .c-p4   {color:#ff80ab;text-shadow:0 0 4px #ff80ab;}
-    .c-cursor{background:rgba(255,255,255,0.2);}
-    .c-sel  {background:rgba(0,255,65,0.25);}
+    #map-wrap{width:100%;background:#000;border:1px solid var(--green-dark);padding:10px;margin-bottom:8px;}
+    /* === Tile grid (was: text spans in a <pre>-like block) === */
+    #ga{display:grid;grid-template-columns:repeat(16,1fr);gap:2px;width:100%;max-width:880px;margin:0 auto;cursor:default;font-family:'Share Tech Mono',monospace;}
+    .tile{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;position:relative;border-radius:3px;font-size:clamp(10px,1.9vw,18px);line-height:1;overflow:hidden;user-select:none;}
+    .tile .ticon{pointer-events:none;}
+    /* Terrain tiles */
+    .c-sea  {background:linear-gradient(145deg,#0d4a7a,#062642);color:#8fd0ff;}
+    .c-land {background:#0d2812;color:#245c2e;}
+    .c-mtn  {background:#3b403b;color:#e0e0e0;}
+    .c-city {background:#4a3200;color:#ffb300;box-shadow:inset 0 0 0 1px rgba(255,179,0,.55);}
+    /* Unit tiles: rounded chip inside the terrain cell, team colour = border/bg/glow */
+    .tile-unit{border-radius:7px;z-index:1;}
+    .tile-unit .uicon{font-size:clamp(11px,2vw,19px);pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.8));}
+    .tile-unit .uhp{position:absolute;right:1px;bottom:0;font-size:clamp(7px,1.1vw,10px);font-weight:bold;color:#fff;background:rgba(0,0,0,.65);padding:0 2px;border-radius:2px;line-height:1.3;pointer-events:none;}
+    .tile-unit .ulab{position:absolute;left:1px;top:0;font-size:clamp(6px,1vw,9px);color:rgba(255,255,255,.85);background:rgba(0,0,0,.5);padding:0 2px;border-radius:2px;line-height:1.3;pointer-events:none;}
+    .c-p0   {background:#0a3d1a;border:2px solid #00ff41;color:#eaffea;box-shadow:0 0 6px rgba(0,255,65,.55),inset 0 0 6px rgba(0,255,65,.25);}
+    .c-p1   {background:#4a0d0d;border:2px solid #ff3b3b;color:#ffecec;box-shadow:0 0 6px rgba(255,59,59,.55),inset 0 0 6px rgba(255,59,59,.25);}
+    .c-p2   {background:#4a3200;border:2px solid #ffb300;color:#fff6d6;box-shadow:0 0 6px rgba(255,179,0,.55),inset 0 0 6px rgba(255,179,0,.25);}
+    .c-p3   {background:#063a4a;border:2px solid #00e5ff;color:#e6fbff;box-shadow:0 0 6px rgba(0,229,255,.55),inset 0 0 6px rgba(0,229,255,.25);}
+    .c-p4   {background:#4a1430;border:2px solid #ff80ab;color:#ffe6f0;box-shadow:0 0 6px rgba(255,128,171,.55),inset 0 0 6px rgba(255,128,171,.25);}
+    /* Cursor / ranges / selected */
+    .c-cursor{outline:3px solid #fff;outline-offset:-3px;z-index:3;box-shadow:0 0 10px rgba(255,255,255,.8);}
+    .c-sel,.tile-move{box-shadow:inset 0 0 0 2px rgba(0,255,65,.85),inset 0 0 12px rgba(0,255,65,.35);filter:brightness(1.7);}
+    .tile-atk{box-shadow:inset 0 0 0 2px rgba(255,59,59,.9),inset 0 0 12px rgba(255,59,59,.4);filter:brightness(1.6);}
+    .tile-selected{animation:tilePulse .7s ease-in-out infinite alternate;z-index:2;}
+    @keyframes tilePulse{from{filter:brightness(1.15);}to{filter:brightness(1.9);}}
     #statusbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
     .stat-block{display:flex;align-items:center;gap:6px;border:1px solid var(--green-dark);background:var(--green-faint);padding:4px 10px;}
     .stat-label{font-size:10px;color:var(--green-dark);letter-spacing:2px;white-space:nowrap;}
@@ -70,13 +82,18 @@
       <span><kbd>R</kbd> 再戦</span>
     </div>
     <div id="legend">
-      <span style="color:#00ff41;">I</span>歩兵 &nbsp;
-      <span style="color:#00ff41;">T</span>戦車 &nbsp;
-      <span style="color:#00ff41;">F</span>戦闘機 &nbsp;
-      <span style="color:#00ff41;">S</span>艦船 &nbsp;|&nbsp;
-      <span style="color:#888;">+</span>都市(補給) &nbsp;
-      <span style="color:#444;">^</span>山 &nbsp;
-      <span style="color:#003366;">~</span>海
+      <span>🚶</span>歩兵 &nbsp;
+      <span>🛡️</span>戦車 &nbsp;
+      <span>✈️</span>戦闘機 &nbsp;
+      <span>🚢</span>艦船 &nbsp;|&nbsp;
+      <span style="color:#00ff41;">■</span>自軍(緑枠) &nbsp;
+      <span style="color:#ff3b3b;">■</span>敵軍(赤枠) &nbsp;
+      ユニット右下の数字=HP &nbsp;|&nbsp;
+      <span>🏙</span>都市(補給) &nbsp;
+      <span style="color:#e0e0e0;">▲</span>山 &nbsp;
+      <span>🌊</span>海 &nbsp;
+      <span style="color:#245c2e;">■</span>平地 &nbsp;|&nbsp;
+      <span style="color:#fff;">□</span>白枠=カーソル / 緑=移動範囲 / 赤=攻撃範囲
     </div>
   </div>
 </div>
@@ -224,32 +241,39 @@ def check_victory():
 
 TCLS={SEA:'c-sea',LAND:'c-land',MTN:'c-mtn',CITY:'c-city'}
 TCHAR={SEA:'~',LAND:'.',MTN:'^',CITY:'+'}
+# Tile icons (render only; game logic still uses TCHAR/UNITS keys)
+TICON={SEA:'🌊',LAND:'·',MTN:'▲',CITY:'🏙'}
+UICON={'I':'🚶','T':'🛡️','F':'✈️','S':'🚢'}
+ULAB={'I':'歩','T':'戦','F':'機','S':'艦'}
 
 def render():
     g=st['map'];cx=st['cx'];cy=st['cy']
     sel=st['sel']
     mr=set(st['move_range']);ar=set(st['atk_range'])
-    lines=[]
+    tiles=[]
     for r in range(H):
-        line=''
         for c in range(W):
             u=unit_at(r,c)
             is_cur=(r==cy and c==cx)
             is_mr=(r,c) in mr
             is_ar=(r,c) in ar
-            if u:
-                ch=u['type']
-                cls=TCOL[u['team']]
-            else:
-                ch=TCHAR.get(g[r][c],'.')
-                cls=TCLS.get(g[r][c],'c-land')
+            is_sel=(sel is not None and u is not None and u is sel)
+            tcls=TCLS.get(g[r][c],'c-land')
             extra=''
             if is_cur: extra+=' c-cursor'
-            elif is_ar: extra+=' c-p1'
-            elif is_mr: extra+=' c-sel'
-            line+=f'<span class="{cls}{extra}">{ch}</span>'
-        lines.append(line)
-    document.getElementById('ga').innerHTML='\n'.join(lines)
+            elif is_ar: extra+=' tile-atk'
+            elif is_mr: extra+=' c-sel tile-move'
+            if u:
+                cls=f'tile tile-unit {TCOL[u["team"]]}'
+                if is_sel: cls+=' tile-selected'
+                inner=(f'<span class="ulab">{ULAB.get(u["type"],u["type"])}</span>'
+                       f'<span class="uicon">{UICON.get(u["type"],u["type"])}</span>'
+                       f'<span class="uhp">{u["hp"]}</span>')
+                tiles.append(f'<div class="{cls}{extra}">{inner}</div>')
+            else:
+                icon=TICON.get(g[r][c],'.')
+                tiles.append(f'<div class="tile {tcls}{extra}"><span class="ticon">{icon}</span></div>')
+    document.getElementById('ga').innerHTML=''.join(tiles)
     document.getElementById('s-turn').textContent=str(st['turn'])
     document.getElementById('s-phase').textContent='自軍' if st['phase']==0 else '敵軍'
     p0=[u for u in st['units'] if u['team']==0]
